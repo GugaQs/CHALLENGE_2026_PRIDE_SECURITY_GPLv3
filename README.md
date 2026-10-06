@@ -463,7 +463,7 @@ Consulte [LICENSE.md](LICENSE.md) para ler os termos completos.
 
 ## 🔗 Repositorio oficial
 
-- https://github.com/carmipa/CHALLENGE_2026_PRIDE_SECURITY
+- https://github.com/GugaQs/CHALLENGE_2026_PRIDE_SECURITY_GPLv3
 
 ---
 

@@ -1,0 +1,48 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Documentacao{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>📚 Documentacao do Projeto</h2>
+    <p>Navegue pelo README e documentos tecnicos diretamente na interface web.</p>
+</section>
+
+<section class="docs-layout">
+    <aside class="panel docs-menu">
+        <h3>Indice</h3>
+        <nav aria-label="Indice da documentacao">
+            <ul>
+                {% for item in menu_docs %}
+                <li>
+                    <a class="acao-link {% if item.ativo %}submenu-ativo{% endif %}" href="{{ item.url }}">
+                        {{ item.titulo }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </aside>
+
+    <article class="panel docs-conteudo">
+        <p class="docs-caminho"><strong>Arquivo:</strong> <code>{{ doc_rel }}</code></p>
+        <h3>{{ titulo_pagina }}</h3>
+        <div class="docs-renderizado">
+            {{ conteudo_html|safe }}
+        </div>
+    </article>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+{# Mermaid servido LOCAL: a CSP da aplicacao e `script-src 'self'`, entao script
+   inline e CDN externo sao bloqueados pelo navegador. Ver docs-mermaid.js. #}
+<script src="{{ url_for('static', filename='js/mermaid.min.js') }}?v={{ asset_version('js/mermaid.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/docs-mermaid.js') }}?v={{ asset_version('js/docs-mermaid.js') }}"></script>
+{% endblock %}

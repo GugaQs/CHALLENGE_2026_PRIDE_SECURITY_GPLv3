@@ -1,0 +1,95 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}ASPM — Pride Security{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{{ url_for('main.icon') }}">
+    {# ?v= pelo mtime: sem ele o navegador serve a folha antiga do cache e a
+       interface nao muda depois de um deploy. Ver asset_version em app/web/app.py. #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ asset_version('css/style.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script type="module" src="{{ url_for('static', filename='js/model-viewer.min.js') }}"></script>
+</head>
+<body>
+    <header class="topo">
+        <div class="topo-conteudo">
+            <h1 class="marca-topo">
+                <img src="{{ url_for('main.icon') }}" alt="Icone Pride Security" class="logo-app">
+                <span>ASPM - Pride Security</span>
+            </h1>
+            <nav aria-label="Menu principal">
+                <ul class="menu-topo">
+                    <li><a class="{% if request.path == '/' %}ativo{% endif %}" href="{{ url_for('main.home') }}" aria-label="Inicio"><span aria-hidden="true">🏠</span> Inicio</a></li>
+                    <li><a class="{% if request.path.startswith('/scan/') and not request.path.startswith('/scan/logs') %}ativo{% endif %}" href="{{ url_for('scan.pagina_scan') }}" aria-label="Scan de projeto"><span aria-hidden="true">📂</span> Scan</a></li>
+                    <li><a class="{% if request.path.startswith('/ia-local') %}ativo{% endif %}" href="{{ url_for('ia_local.pagina_ia_local') }}" aria-label="IA Local"><span aria-hidden="true">🧠</span> IA Local</a></li>
+                    <li><a class="{% if request.path.startswith('/logs') and not request.path.startswith('/scan/logs') %}ativo{% endif %}" href="{{ url_for('logs.pagina_logs_sistema') }}" aria-label="Logs do sistema"><span aria-hidden="true">📜</span> Logs</a></li>
+                    <li><a class="{% if request.path.startswith('/scan/logs') %}ativo{% endif %}" href="{{ url_for('scan.pagina_logs', secao='scan') }}" aria-label="Relatorios de scan"><span aria-hidden="true">📄</span> Relatorios</a></li>
+                    <li><a class="{% if request.path.startswith('/documentacao') %}ativo{% endif %}" href="{{ url_for('documentacao.pagina_documentacao') }}" aria-label="Documentacao"><span aria-hidden="true">📚</span> Documentacao</a></li>
+                    <li><a class="{% if request.path.startswith('/sobre') %}ativo{% endif %}" href="{{ url_for('sobre.pagina_sobre') }}" aria-label="Sobre o projeto"><span aria-hidden="true">ℹ️</span> Sobre</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+            {% if mensagens %}
+                <section class="mensagens">
+                    {% for categoria, texto in mensagens %}
+                        <article class="alerta {{ categoria }}">{{ texto }}</article>
+                    {% endfor %}
+                </section>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="rodape-projeto">
+        <div class="rodape-animacao">
+            <model-viewer
+                src="{{ url_for('static', filename='models/footer_animation.glb') }}"
+                alt="Animacao 3D Pride Security"
+                autoplay
+                auto-rotate
+                auto-rotate-delay="0"
+                rotation-per-second="18deg"
+                camera-controls
+                disable-zoom
+                environment-image="neutral"
+                shadow-intensity="1"
+                shadow-softness="0.8"
+                exposure="1.2"
+                tone-mapping="commerce"
+                class="rodape-model-viewer"
+            ></model-viewer>
+        </div>
+        <div class="rodape-conteudo">
+            <p>🛡️ <strong>ASPM IA - Python API Core</strong> | 🎓 FIAP Challenge Pride Security 2026</p>
+            <p>🏫 Turma 1TDCPV - 2026</p>
+            <p>
+                🔗 Repositorio:
+                <a href="https://github.com/carmipa/CHALLENGE_2026_PRIDE_SECURITY" target="_blank" rel="noopener noreferrer">
+                    github.com/carmipa/CHALLENGE_2026_PRIDE_SECURITY
+                </a>
+            </p>
+            <div class="badge-bar centralizado">
+                <img src="https://img.shields.io/badge/Status-Ativo-2ea44f?style=for-the-badge&logo=rocket" alt="Status ativo">
+                <img src="https://img.shields.io/badge/Python-3.11+-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.11+">
+                <img src="https://img.shields.io/badge/Flask-Web-0E7490?style=for-the-badge&logo=flask&logoColor=white" alt="Flask Web">
+                <img src="https://img.shields.io/badge/Docker-Pronto-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker pronto">
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}?v={{ asset_version('js/app.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

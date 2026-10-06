@@ -1,0 +1,105 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}IA Local{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>🧠 Scan de Projeto — IA Local</h2>
+    <p>Perfil GPU: <strong>{{ hardware|upper }}</strong> | LM Studio:
+        {% if status_lm.conectado %}
+            <span class="status-ok">conectado ({{ status_lm.modelo }})</span>
+        {% else %}
+            <span class="status-erro">offline — inicie o LM Studio em localhost:1234</span>
+        {% endif %}
+    </p>
+    <p>
+        <a href="{{ url_for('ia_local.pagina_ia_local', hw='amd') }}">AMD</a> |
+        <a href="{{ url_for('ia_local.pagina_ia_local', hw='nvidia') }}">NVIDIA</a>
+    </p>
+</section>
+
+<section class="panel">
+    <h3>Executar scan {{ hardware|upper }}</h3>
+    <form class="form-grid" id="form-scan-ia" data-hardware="{{ hardware }}">
+        <label for="caminho-ia">Caminho do projeto</label>
+        <div class="input-com-acao">
+            <input id="caminho-ia" name="caminho" type="text" placeholder="Ex.: G:\projetos\app" required>
+            <button type="button" class="botao-secundario btn-buscar-pasta" data-campo="caminho-ia" title="Abre o explorador de arquivos para escolher a pasta do projeto no disco local">📂 Buscar pasta</button>
+        </div>
+        <button type="submit" id="btn-scan-ia" title="Executa o motor GPU ({{ hardware|upper }}) no projeto e gera relatorio JSON de vulnerabilidades">📂 Scan de projeto</button>
+    </form>
+
+    <form class="form-grid form-acao-secundaria" id="form-cognitivo-ia" data-hardware="{{ hardware }}">
+        <p class="texto-ajuda">Scan cognitivo: usa o mesmo caminho acima, executa scan e gera parecer IA.</p>
+        <button type="submit" id="btn-cognitivo-ia" title="Executa o scan GPU e, em seguida, gera parecer de IA via LM Studio no mesmo processo assincrono">🚀 Scan cognitivo (scan + IA)</button>
+    </form>
+</section>
+
+{% include "painel_progresso/_painel_progresso.html" %}
+
+<section class="panel painel-acoes-ia">
+    <h3>Acoes rapidas</h3>
+    <div class="acoes-logs">
+        <form method="post" action="{{ url_for('ia_local.reanalisar_relatorio') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="hardware" value="{{ hardware }}">
+            <button type="submit" title="Reprocessa o ultimo relatorio JSON deste perfil GPU com o modelo LM Studio conectado">🧠 Re-analisar ultimo relatorio</button>
+        </form>
+        <form method="post" action="{{ url_for('ia_local.imprimir_parecer') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="hardware" value="{{ hardware }}">
+            <button type="submit" class="botao-secundario" title="Abre o ultimo parecer gerado (MD) em nova aba para impressao ou leitura">🖨️ Imprimir ultimo parecer</button>
+        </form>
+    </div>
+</section>
+
+<section class="panel">
+    <h3>Relatorios {{ hardware|upper }}</h3>
+    {% if relatorios %}
+        <table class="tabela-tatica">
+            <thead>
+                <tr>
+                    <th>Arquivo</th>
+                    <th>Projeto</th>
+                    <th>Falhas</th>
+                    <th>IA</th>
+                    <th>Acoes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rel in relatorios %}
+                    <tr>
+                        <td>{{ rel.nome_arquivo }}</td>
+                        <td>{{ rel.projeto }}</td>
+                        <td>{{ rel.total_falhas }}</td>
+                        <td>
+                            {% if rel.tem_parecer_md %}MD{% endif %}
+                            {% if rel.tem_parecer_txt %} TXT{% endif %}
+                        </td>
+                        <td class="celula-acoes-ia">
+                            <a href="{{ url_for('ia_local.auditoria_relatorio', hw=hardware, nome_log=rel.nome_arquivo) }}">📋 Auditoria</a>
+                            <form method="post" action="{{ url_for('ia_local.analisar_com_ia') }}" class="form-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="hardware" value="{{ hardware }}">
+                                <input type="hidden" name="relatorio" value="{{ rel.nome_arquivo }}">
+                                <button type="submit" title="Gera parecer de IA (arquivos MD e TXT) para este relatorio JSON especifico">Analisar IA</button>
+                            </form>
+                            {% if rel.tem_parecer_md %}
+                                <a href="{{ url_for('ia_local.ver_parecer', hw=hardware, arquivo=rel.nome_arquivo.replace('.json', '_AI_PREMIUM.md')) }}">Ver parecer</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Nenhum relatorio JSON para este perfil.</p>
+    {% endif %}
+</section>
+{% endblock %}

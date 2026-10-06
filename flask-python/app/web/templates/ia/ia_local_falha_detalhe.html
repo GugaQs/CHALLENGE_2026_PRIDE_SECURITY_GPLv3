@@ -1,0 +1,80 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Detalhe da Falha{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>🔎 Falha #{{ falha.indice }} — {{ hardware|upper }}</h2>
+    <p>
+        <a href="{{ url_for('ia_local.auditoria_relatorio', hw=hardware, nome_log=nome_log) }}">↩️ Voltar a auditoria</a>
+    </p>
+</section>
+
+<section class="panel">
+    <div class="resumo-grid">
+        <p>
+            <strong>🚦 Severidade:</strong>
+            {% set sev = falha.severidade|string|upper %}
+            {% if "CRIT" in sev or "CRÍT" in sev %}
+                <span class="tag-sev critico"><span class="icone-sev">🛑</span>{{ falha.severidade }}</span>
+            {% elif "ALTO" in sev or "ALTA" in sev %}
+                <span class="tag-sev alto"><span class="icone-sev">🔴</span>{{ falha.severidade }}</span>
+            {% elif "MED" in sev or "MÉD" in sev %}
+                <span class="tag-sev medio"><span class="icone-sev">🟠</span>{{ falha.severidade }}</span>
+            {% else %}
+                <span class="tag-sev baixo"><span class="icone-sev">🟢</span>{{ falha.severidade }}</span>
+            {% endif %}
+        </p>
+        <p><strong>🏷️ Tipo:</strong> {{ falha.tipo }}</p>
+        <p><strong>📄 Arquivo:</strong> {{ falha.arquivo }}</p>
+        <p><strong>📍 Linha:</strong> {{ falha.linha }}</p>
+        <p><strong>🎯 Confianca:</strong> {{ falha.confianca or '-' }}</p>
+        <p><strong>🧪 Padrao:</strong> {{ falha.padrao_detectado }}</p>
+    </div>
+
+    {% if falha.descricao %}
+        <h3>💡 Explicacao</h3>
+        <p>{{ falha.descricao }}</p>
+    {% endif %}
+
+    {% if falha.referencias %}
+        <h3>📚 Referencias</h3>
+        <ul>
+            {% for ref in falha.referencias %}
+                <li>{{ ref }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if falha.links_cve %}
+        <h3>🧷 CVE (NVD)</h3>
+        <ul class="lista-links-ref">
+            {% for item in falha.links_cve %}
+                <li><a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.codigo }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if falha.links_cwe %}
+        <h3>🧷 CWE</h3>
+        <ul class="lista-links-ref">
+            {% for item in falha.links_cwe %}
+                <li>
+                    <a href="{{ item.url_nvd }}" target="_blank" rel="noopener noreferrer">{{ item.codigo }} (NVD)</a>
+                    —
+                    <a href="{{ item.url_mitre }}" target="_blank" rel="noopener noreferrer">MITRE</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <h3>💻 Trecho de codigo</h3>
+    <pre class="log-bruto"><code>{{ falha.codigo }}</code></pre>
+</section>
+{% endblock %}

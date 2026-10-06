@@ -1,0 +1,195 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Detalhe do Log{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>🧾 Detalhe do relatorio: {{ nome_log }}</h2>
+    <div class="resumo-grid">
+        <p><strong>📁 Projeto:</strong> {{ dados.projeto }}</p>
+        <p><strong>🕒 Timestamp:</strong> {{ dados.timestamp_utc_global or dados.timestamp or '-' }}</p>
+        <p><strong>📦 Total de arquivos:</strong> {{ dados.total_arquivos_analisados }}</p>
+        <p><strong>🚨 Total de falhas:</strong> {{ falhas|length }}</p>
+    </div>
+    <p>
+        <a class="acao-link" href="{{ url_for('scan.filtros_avancados', nome_log=nome_log) }}">Filtros avancados (exportar JSON)</a>
+        |
+        <a class="acao-link" href="{{ url_for('scan.visualizar_log_json', nome_log=nome_log) }}">Ver JSON bruto</a>
+    </p>
+    <div class="resumo-sev">
+        <span class="tag-sev critico">🛑 Critico: {{ resumo_severidade.critico }}</span>
+        <span class="tag-sev alto">🔴 Alto: {{ resumo_severidade.alto }}</span>
+        <span class="tag-sev medio">🟠 Medio: {{ resumo_severidade.medio }}</span>
+        <span class="tag-sev baixo">🟢 Baixo: {{ resumo_severidade.baixo }}</span>
+        {% set nivel_score = 'critico' if score_risco > 80 else ('alto' if score_risco > 50 else ('medio' if score_risco > 20 else 'baixo')) %}
+        <span class="tag-sev {{ nivel_score }} score-risco-badge">🎯 Score: {{ score_risco }}/100</span>
+    </div>
+</section>
+
+<section class="panel">
+    <h3>🚨 Falhas encontradas</h3>
+    {% if falhas %}
+        <form method="get" action="{{ url_for('scan.detalhe_log', nome_log=nome_log) }}" class="form-filtros-falhas">
+            <input type="hidden" name="por_pagina" value="{{ por_pagina }}">
+            <div class="filtro-campo">
+                <label for="severidade">🚦 Severidade</label>
+                <select id="severidade" name="severidade">
+                    <option value="">Todas</option>
+                    {% for opcao in severidades_disponiveis %}
+                        <option value="{{ opcao }}" {% if filtro_severidade == opcao %}selected{% endif %}>{{ opcao }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filtro-campo">
+                <label for="tipo">🏷️ Tipo</label>
+                <select id="tipo" name="tipo">
+                    <option value="">Todos</option>
+                    {% for opcao in tipos_disponiveis %}
+                        <option value="{{ opcao }}" {% if filtro_tipo == opcao %}selected{% endif %}>{{ opcao }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filtro-campo">
+                <label for="arquivo">📄 Arquivo</label>
+                <input id="arquivo" name="arquivo" type="text" value="{{ filtro_arquivo }}" placeholder="Ex.: app.py">
+            </div>
+
+            <div class="filtro-acoes">
+                <button type="submit" title="Aplica os filtros de severidade, tipo e arquivo na tabela de vulnerabilidades">🎯 Filtrar falhas</button>
+                <a class="acao-link" href="{{ url_for('scan.detalhe_log', nome_log=nome_log, por_pagina=por_pagina) }}">♻️ Limpar filtros</a>
+            </div>
+        </form>
+
+        <form method="get" action="{{ url_for('scan.detalhe_log', nome_log=nome_log) }}" class="form-paginacao">
+            <input type="hidden" name="pagina" value="1">
+            <input type="hidden" name="severidade" value="{{ filtro_severidade }}">
+            <input type="hidden" name="tipo" value="{{ filtro_tipo }}">
+            <input type="hidden" name="arquivo" value="{{ filtro_arquivo }}">
+            <label for="por_pagina">📚 Itens por pagina (max 50):</label>
+            <select id="por_pagina" name="por_pagina" class="auto-submit">
+                {% for opcao in opcoes_por_pagina %}
+                    <option value="{{ opcao }}" {% if por_pagina == opcao %}selected{% endif %}>{{ opcao }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        <p class="texto-paginacao">
+            Exibindo <strong>{{ inicio_exibicao }}</strong> a <strong>{{ fim_exibicao }}</strong>
+            de <strong>{{ total_falhas }}</strong> falhas ({{ por_pagina }} por pagina)
+            {% if filtro_severidade or filtro_tipo or filtro_arquivo %}
+                | Base total do log: <strong>{{ total_falhas_geral }}</strong>
+            {% endif %}
+        </p>
+        <div class="tabela-wrapper">
+            <table class="tabela-tatica">
+                <thead>
+                    <tr>
+                        <th>🆔 ID</th>
+                        <th>🚦 Severidade</th>
+                        <th>🏷️ Tipo</th>
+                        <th>📄 Arquivo</th>
+                        <th>📍 Linha</th>
+                        <th>🎯 Confianca</th>
+                        <th>🧪 Padrao</th>
+                        <th>📛 CVE / CWE</th>
+                        <th>💻 Trecho</th>
+                        <th>🧭 Acao</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for falha in falhas_pagina %}
+                        <tr>
+                            <td data-label="ID">
+                                <button
+                                    type="button"
+                                    class="id-falha-botao"
+                                    data-log="{{ nome_log }}"
+                                    data-falha-id="{{ falha.indice }}"
+                                    title="Abrir arquivo desta falha"
+                                >
+                                    🔎 {{ falha.indice }}
+                                </button>
+                            </td>
+                            <td data-label="Severidade">
+                                {% set sev = falha.severidade|string|upper %}
+                                {% if "CRIT" in sev or "CRÍT" in sev %}
+                                    <span class="tag-sev critico"><span class="icone-sev">🛑</span>{{ falha.severidade }}</span>
+                                {% elif "ALTO" in sev or "ALTA" in sev %}
+                                    <span class="tag-sev alto"><span class="icone-sev">🔴</span>{{ falha.severidade }}</span>
+                                {% elif "MED" in sev or "MÉD" in sev %}
+                                    <span class="tag-sev medio"><span class="icone-sev">🟠</span>{{ falha.severidade }}</span>
+                                {% else %}
+                                    <span class="tag-sev baixo"><span class="icone-sev">🟢</span>{{ falha.severidade }}</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Tipo">{{ falha.tipo }}</td>
+                            <td data-label="Arquivo">{{ falha.arquivo }}</td>
+                            <td data-label="Linha">{{ falha.linha }}</td>
+                            <td data-label="Confianca">{{ falha.confianca or '-' }}</td>
+                            <td data-label="Padrao">{{ falha.padrao_detectado }}</td>
+                            <td data-label="CVE / CWE" class="celula-links-ref">
+                                {% if falha.links_cve %}
+                                    <div class="links-ref-grupo">
+                                        <span class="links-ref-titulo">CVE</span>
+                                        {% for item in falha.links_cve %}
+                                            <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.codigo }}</a>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if falha.links_cwe %}
+                                    <div class="links-ref-grupo">
+                                        <span class="links-ref-titulo">CWE</span>
+                                        {% for item in falha.links_cwe %}
+                                            <span class="link-cwe-bloco">
+                                                <a href="{{ item.url_nvd }}" target="_blank" rel="noopener noreferrer" title="CVEs no NVD">{{ item.codigo }} (NVD)</a>
+                                                <a href="{{ item.url_mitre }}" target="_blank" rel="noopener noreferrer" title="Definicao MITRE">MITRE</a>
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                {% if not falha.links_cve and not falha.links_cwe %}
+                                    <span class="sem-ref">—</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Trecho"><code>{{ falha.codigo }}</code></td>
+                            <td data-label="Acao">
+                                <button
+                                    type="button"
+                                    class="abrir-falha-botao"
+                                    data-log="{{ nome_log }}"
+                                    data-falha-id="{{ falha.indice }}"
+                                    title="Abre o arquivo-fonte desta falha no editor padrao do sistema, quando disponivel"
+                                >
+                                    📂 Abrir arquivo
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <nav class="paginacao" aria-label="Paginacao de falhas">
+            {% if pagina > 1 %}
+                <a class="acao-link" href="{{ url_for('scan.detalhe_log', nome_log=nome_log, pagina=1, por_pagina=por_pagina, severidade=filtro_severidade, tipo=filtro_tipo, arquivo=filtro_arquivo) }}">⏮️ Primeira</a>
+                <a class="acao-link" href="{{ url_for('scan.detalhe_log', nome_log=nome_log, pagina=pagina-1, por_pagina=por_pagina, severidade=filtro_severidade, tipo=filtro_tipo, arquivo=filtro_arquivo) }}">⬅️ Anterior</a>
+            {% endif %}
+
+            <span class="pagina-atual">📖 Pagina {{ pagina }} de {{ total_paginas }}</span>
+
+            {% if pagina < total_paginas %}
+                <a class="acao-link" href="{{ url_for('scan.detalhe_log', nome_log=nome_log, pagina=pagina+1, por_pagina=por_pagina, severidade=filtro_severidade, tipo=filtro_tipo, arquivo=filtro_arquivo) }}">Proxima ➡️</a>
+                <a class="acao-link" href="{{ url_for('scan.detalhe_log', nome_log=nome_log, pagina=total_paginas, por_pagina=por_pagina, severidade=filtro_severidade, tipo=filtro_tipo, arquivo=filtro_arquivo) }}">Ultima ⏭️</a>
+            {% endif %}
+        </nav>
+    {% else %}
+        <p>Nenhuma falha registrada nesse log.</p>
+    {% endif %}
+</section>
+{% endblock %}

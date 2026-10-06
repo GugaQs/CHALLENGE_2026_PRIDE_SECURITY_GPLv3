@@ -1,0 +1,89 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Scan GitHub - Problema?{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>🐙 Scan GitHub - Problema?</h2>
+    <p>
+        Esta página explica por que depender somente de ferramentas automáticas do GitHub
+        pode gerar gargalos técnicos e financeiros em escala corporativa.
+    </p>
+    <p>
+        <a class="acao-link" href="{{ url_for('main.home') }}">↩️ Voltar ao dashboard</a>
+    </p>
+</section>
+
+<section class="panel">
+    <h3>1. O Problema das Ferramentas Automáticas do GitHub</h3>
+    <p>
+        Ferramentas padrão que rodam nativamente nas esteiras automáticas do GitHub
+        (como o CodeQL do próprio GitHub) possuem três grandes limitações em ambientes
+        corporativos reais:
+    </p>
+
+    <ul>
+        <li>
+            <strong>Custo Proibitivo de Computação (runners):</strong>
+            Rodar análise estática profunda (SAST) e IA cognitiva em esteiras na nuvem
+            consome milhares de minutos de runners. Para empresas com milhares de
+            repositórios, o custo de infraestrutura em nuvem explode.
+        </li>
+        <li>
+            <strong>Falta de IA Local e Privacidade:</strong>
+            As ferramentas de IA automáticas em nuvem geralmente enviam trechos de código
+            do cliente para APIs públicas de terceiros (como OpenAI). Empresas com
+            políticas rígidas de propriedade intelectual ou conformidade bancária proíbem
+            o envio de códigos proprietários para fora de sua infraestrutura.
+        </li>
+        <li>
+            <strong>Volume Massivo de Falsos Positivos:</strong>
+            O CodeQL e scanners padrão geram toneladas de alertas redundantes e ruído,
+            sobrecarregando o time de desenvolvimento (o famoso alert fatigue).
+        </li>
+    </ul>
+</section>
+
+<section class="panel panel-imagem-arquitetura">
+    <h3>2. Gargalos da abordagem em nuvem (GitHub)</h3>
+    <p>
+        O diagrama abaixo resume o fluxo típico no GitHub, os gargalos de custo e privacidade
+        e o motivo técnico para evitar depender só desse modelo em escala corporativa.
+    </p>
+    <div class="arquitetura-scroll">
+        <figure class="figura-arquitetura">
+            <img
+                src="{{ url_for('static', filename='img/git_hub_problemas.png', v=asset_version('img/git_hub_problemas.png')) }}"
+                alt="Diagrama dos gargalos de scans automáticos no GitHub (runners, nuvem e alert fatigue)"
+                class="imagem-arquitetura imagem-arquitetura-raster"
+                loading="lazy"
+            >
+        </figure>
+    </div>
+</section>
+
+<section class="panel panel-imagem-arquitetura">
+    <h3>3. Solução ASPM PRIDE — abordagem híbrida local</h3>
+    <p>
+        Esquema vetorial da arquitetura proposta: aceleração por GPU local (NVIDIA/AMD),
+        IA cognitiva no LM Studio, engine Python com filtros proprietários e visualização
+        unificada — sem enviar código proprietário para APIs públicas.
+    </p>
+    <div class="arquitetura-scroll arquitetura-scroll--svg">
+        <figure class="figura-arquitetura">
+            <img
+                src="{{ url_for('static', filename='img/aspm_pride_architecture_local_ai.svg', v=asset_version('img/aspm_pride_architecture_local_ai.svg')) }}"
+                alt="Arquitetura híbrida ASPM PRIDE com aceleração local, IA e engine Python"
+                class="imagem-arquitetura imagem-arquitetura-svg"
+                loading="lazy"
+            >
+        </figure>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,2040 @@
+/*
+ * Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+ *
+ * This program is licensed under the GNU General Public License v3.0.
+ * See LICENSE.md for the full license text.
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ASPM — PRIDE SECURITY · Sistema de design da interface web
+   ---------------------------------------------------------------------------
+   PROPOSITO
+     Folha unica da aplicacao Flask. Linguagem visual minimalista sobre fundo
+     escuro: hierarquia feita com espaco, peso e um unico acento; cor forte
+     reservada para o que carrega significado (severidade, nivel de log, status).
+
+   ACESSIBILIDADE E ESCALA — a decisao central desta folha
+     Nao ha NENHUMA medida em px.
+       - `rem` para tipografia, espacamento, raio e borda. `rem` acompanha o
+         tamanho de fonte que a PESSOA configurou no navegador; quem usa 20px por
+         padrao recebe a interface inteira proporcionalmente maior. Medida em px
+         ignora essa configuracao — e por isso que px sai.
+       - `clamp()` + `vw` na tipografia de titulo e no espacamento de pagina, para
+         escalar continuamente entre telas em vez de saltar em degraus.
+       - `%`, `fr` e `minmax()` nas larguras de layout, onde porcentagem e a
+         unidade correta.
+       - `em` nos media queries: o ponto de quebra passa a acompanhar o zoom de
+         fonte do usuario, e nao so a largura fisica do monitor.
+     Por que nao `%` em tudo: `%` em `padding` resolve contra a LARGURA do
+     container (padding vertical cresceria junto com a largura da tela) e `%` em
+     `font-size` ACUMULA a cada aninhamento. Nos dois casos o resultado e
+     imprevisivel; `rem` resolve o mesmo problema sem esses efeitos.
+
+   INVARIANTES
+     - Nenhum nome de classe ou id foi renomeado. O app.js liga comportamento a
+       `.oculto`, `.toast--saindo`, `.linha-clicavel`, `.auto-submit`,
+       `[data-confirm]`, `.btn-buscar-pasta`, `.abrir-falha-botao`,
+       `.id-falha-botao`, `.alerta.success`, `.alerta.info`, `.tooltip-global` e
+       aos ids `painel-progresso`, `barra-progresso-preenchimento`,
+       `texto-progresso`, `numeros-progresso`, `log-terminal`,
+       `painel-resultado-containers`, `tabela-containers-wrapper` e afins.
+       Renomear qualquer um deles quebra a interface em silencio.
+     - Sem @import, sem webfont remota, sem url() externa: a CSP da aplicacao e
+       `default-src 'self'`, entao recurso de terceiro nao carrega.
+     - `.oculto` e o unico mecanismo de esconder/mostrar usado pelo JS e leva
+       `!important` para nunca perder para uma regra de display mais especifica.
+     - `.tooltip-global` precisa continuar `position: absolute`: o app.js escreve
+       left/top em coordenadas de documento.
+
+   ORGANIZACAO
+     01 tokens · 02 base · 03 layout · 04 superficies · 05 formularios
+     06 tabelas · 07 severidade · 08 progresso · 09 logs · 10 documentacao
+     11 alertas e toasts · 12 tooltip · 13 arquitetura · 14 utilitarios
+     15 responsivo · 16 impressao e movimento reduzido
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 01 · TOKENS ─────────────────────────────────────────────────────────── */
+
+:root {
+    /* Identidade herdada — nomes preservados por compatibilidade */
+    --deep-space: #0B1220;
+    --titanium-grey: #3A3F47;
+    --v-fin-gold: #D9AE45;
+    --amuro-white: #F2F2F2;
+    --psycho-frame-cyan: #4FE3EC;
+    --warning-red: #D90429;
+
+    /* Superficies — poucas, e proximas entre si: o minimalismo separa por
+       espaco e por linha fina, nao por contraste de bloco. */
+    --sup-0: #080D17;
+    --sup-1: #0E1725;
+    --sup-2: #131E2F;
+    --sup-3: #18263A;
+
+    /* Texto — quatro niveis */
+    /* Os quatro niveis foram MEDIDOS contra as tres superficies (--deep-space,
+       --sup-1, --sup-2). Todos passam WCAG AA para texto normal (>= 4.5:1).
+       --txt-4 era #61798C e reprovava (3.68:1 sobre --sup-2); foi clareado
+       porque carrega conteudo de verdade — a data em `.log-data`, nao so
+       decoracao. Ao mexer nestes valores, medir de novo antes de commitar. */
+    --txt-1: #EEF4F8;
+    --txt-2: #B9CAD8;
+    --txt-3: #8199AC;
+    --txt-4: #7590A4;
+
+    /* Acento unico */
+    --acento: #4FE3EC;
+    --acento-forte: #7FEEF5;
+    --acento-fundo: rgba(79, 227, 236, 0.07);
+    --acento-fundo-forte: rgba(79, 227, 236, 0.13);
+    --acento-linha: rgba(79, 227, 236, 0.24);
+    --acento-linha-forte: rgba(79, 227, 236, 0.48);
+
+    /* Semantica */
+    --ok: #43C98A;
+    --ok-claro: #A6EFC9;
+    --ok-fundo: rgba(67, 201, 138, 0.12);
+    --atencao: #D9AE45;
+    --atencao-claro: #F5DFA4;
+    --atencao-fundo: rgba(217, 174, 69, 0.12);
+    --perigo: #F2617C;
+    --perigo-claro: #FFC3CE;
+    --perigo-fundo: rgba(242, 97, 124, 0.12);
+    --info: #5FA8E8;
+    --info-claro: #C3E0FA;
+    --info-fundo: rgba(95, 168, 232, 0.12);
+    --roxo: #9B85EE;
+    --roxo-claro: #D6CBFA;
+
+    /* Linhas — hairline: a espessura tambem em rem, para nao sumir sob zoom */
+    --linha: rgba(140, 170, 195, 0.14);
+    --linha-forte: rgba(140, 170, 195, 0.26);
+    --fio: 0.0625rem;
+
+    /* Compatibilidade com nomes antigos */
+    --panel-bg: var(--sup-1);
+    --panel-border: var(--acento-linha-forte);
+
+    /* Espacamento — escala em rem */
+    --e-1: 0.25rem;
+    --e-2: 0.5rem;
+    --e-3: 0.75rem;
+    --e-4: 1rem;
+    --e-5: 1.5rem;
+    --e-6: 2rem;
+    --e-7: 3rem;
+    --e-8: 4rem;
+
+    /* Respiro lateral da pagina: cresce com a viewport, com piso e teto */
+    --margem-pagina: clamp(1rem, 4vw, 2.5rem);
+
+    /* Raio */
+    --r-1: 0.375rem;
+    --r-2: 0.625rem;
+    --r-3: 0.875rem;
+    --r-pilula: 62rem;
+
+    /* Elevacao — discreta; o minimalismo prefere a linha a sombra */
+    --sombra-1: 0 0.0625rem 0.125rem rgba(2, 6, 16, 0.45);
+    --sombra-2: 0 0.5rem 1.5rem rgba(2, 6, 16, 0.40);
+    --sombra-3: 0 1rem 2.5rem rgba(2, 6, 16, 0.55);
+
+    /* Tipografia — escala em rem; titulos fluidos com clamp */
+    --fonte: "Segoe UI", Tahoma, Verdana, Arial, sans-serif;
+    --fonte-mono: Consolas, "Cascadia Mono", "Fira Mono", "Courier New", monospace;
+    --t-xs: 0.6875rem;
+    --t-sm: 0.75rem;
+    --t-md: 0.8125rem;
+    --t-base: 0.875rem;
+    --t-lg: 1rem;
+    --t-xl: clamp(1.125rem, 0.9rem + 1vw, 1.5rem);
+    --t-2xl: clamp(1.375rem, 1rem + 1.6vw, 2rem);
+
+    /* Largura util e medida de leitura */
+    --largura: 85rem;
+    --medida: 78ch;
+
+    /* Movimento */
+    --rapido: 120ms cubic-bezier(0.2, 0, 0.2, 1);
+    --normal: 200ms cubic-bezier(0.2, 0, 0.2, 1);
+
+    color-scheme: dark;
+}
+
+/* ── 02 · BASE ───────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    /* Sem font-size fixo aqui: manter o padrao do navegador e o que faz `rem`
+       respeitar a preferencia de acessibilidade da pessoa. */
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--fonte);
+    font-size: var(--t-base);
+    line-height: 1.6;
+    color: var(--txt-2);
+    background: var(--deep-space);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5 {
+    color: var(--txt-1);
+    line-height: 1.3;
+    font-weight: 600;
+    text-wrap: balance;
+}
+
+h2 {
+    font-size: var(--t-xl);
+    margin: 0 0 var(--e-2);
+    letter-spacing: -0.011em;
+}
+
+h3 {
+    font-size: var(--t-lg);
+    margin: 0 0 var(--e-2);
+    letter-spacing: -0.006em;
+}
+
+h4 {
+    font-size: var(--t-base);
+    margin: 0 0 var(--e-1);
+}
+
+p {
+    margin: 0 0 var(--e-3);
+    max-width: var(--medida);
+}
+
+a {
+    color: var(--acento);
+}
+
+hr {
+    border: none;
+    border-top: var(--fio) solid var(--linha);
+    margin: var(--e-5) 0;
+}
+
+code {
+    font-family: var(--fonte-mono);
+    font-size: 0.94em;
+    color: #96EBD6;
+    background: rgba(0, 0, 0, 0.30);
+    border-radius: var(--r-1);
+    padding: 0.0625rem 0.3125rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+pre code {
+    background: none;
+    padding: 0;
+}
+
+::selection {
+    background: rgba(79, 227, 236, 0.26);
+    color: #FFFFFF;
+}
+
+/* Foco visivel unico para tudo que recebe teclado. */
+:focus-visible {
+    outline: 0.125rem solid var(--acento);
+    outline-offset: 0.125rem;
+    border-radius: var(--r-1);
+}
+
+/* Barra de rolagem discreta, coerente com o tema. */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(140, 170, 195, 0.30) transparent;
+}
+
+*::-webkit-scrollbar {
+    width: 0.5rem;
+    height: 0.5rem;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: rgba(140, 170, 195, 0.26);
+    border-radius: var(--r-pilula);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--acento-linha-forte);
+}
+
+/* ── 03 · LAYOUT: TOPO, CONTAINER, RODAPE ────────────────────────────────── */
+
+.topo {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: rgba(8, 13, 23, 0.92);
+    border-bottom: var(--fio) solid var(--linha);
+    backdrop-filter: blur(0.75rem);
+}
+
+.topo-conteudo {
+    width: min(100%, var(--largura));
+    margin: 0 auto;
+    padding: 0 var(--margem-pagina);
+    display: flex;
+    align-items: center;
+    gap: var(--e-5);
+    min-height: 3.5rem;
+}
+
+.topo h1 {
+    margin: 0;
+    font-size: var(--t-md);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--txt-1);
+    white-space: nowrap;
+}
+
+.marca-topo {
+    display: flex;
+    align-items: center;
+    gap: var(--e-3);
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.marca-topo span {
+    color: var(--txt-1);
+}
+
+.logo-app {
+    height: 2rem;
+    width: auto;
+    max-width: 11rem;
+    object-fit: contain;
+    border-radius: var(--r-1);
+    background: transparent;
+    opacity: 0.92;
+    transition: opacity var(--rapido);
+    flex-shrink: 0;
+}
+
+.logo-app:hover {
+    opacity: 1;
+}
+
+.menu-topo {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: var(--e-1);
+    flex: 1;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.menu-topo a {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.4375rem 0.75rem;
+    border-radius: var(--r-1);
+    color: var(--txt-3);
+    text-decoration: none;
+    font-size: var(--t-sm);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: color var(--rapido), background var(--rapido);
+}
+
+.menu-topo a:hover {
+    color: var(--txt-1);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* Ativo marcado por um fio embaixo — a marca mais discreta que ainda le. */
+.menu-topo a.ativo {
+    color: var(--acento);
+}
+
+.menu-topo a.ativo::after {
+    content: "";
+    position: absolute;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.125rem;
+    height: 0.09375rem;
+    border-radius: var(--r-pilula);
+    background: var(--acento);
+}
+
+.container {
+    width: min(100%, var(--largura));
+    margin: var(--e-5) auto var(--e-7);
+    padding: 0 var(--margem-pagina);
+}
+
+.rodape-projeto {
+    margin-top: var(--e-7);
+    border-top: var(--fio) solid var(--linha);
+    background: var(--sup-0);
+}
+
+.rodape-animacao {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: var(--e-3) 0 0;
+}
+
+.rodape-model-viewer {
+    width: 100%;
+    max-width: 68rem;
+    height: clamp(11rem, 22vw, 18rem);
+    background: transparent;
+    --progress-bar-color: rgba(79, 227, 236, 0.4);
+    --progress-mask: rgba(8, 13, 23, 0.95);
+}
+
+.rodape-conteudo {
+    width: min(100%, var(--largura));
+    margin: 0 auto;
+    padding: var(--e-5) var(--margem-pagina);
+    text-align: center;
+    color: var(--txt-3);
+    display: grid;
+    gap: var(--e-1);
+    justify-items: center;
+}
+
+.rodape-conteudo p {
+    margin: 0;
+    max-width: none;
+    font-size: var(--t-md);
+}
+
+.rodape-conteudo a {
+    color: var(--acento);
+    text-decoration: none;
+}
+
+.rodape-conteudo a:hover {
+    text-decoration: underline;
+}
+
+.badge-bar {
+    display: flex;
+    gap: var(--e-2);
+    flex-wrap: wrap;
+    margin: 0 0 var(--e-3);
+}
+
+.badge-bar img {
+    max-height: 1.5rem;
+}
+
+.badge-bar.centralizado {
+    justify-content: center;
+    margin-top: var(--e-2);
+}
+
+/* ── 04 · SUPERFICIES: PANEL, CARD, GRIDS ────────────────────────────────── */
+
+.panel {
+    background: var(--sup-1);
+    border: var(--fio) solid var(--linha);
+    border-radius: var(--r-3);
+    padding: clamp(var(--e-4), 2.4vw, var(--e-5));
+    margin-bottom: var(--e-4);
+    transition: border-color var(--normal);
+}
+
+.panel:hover {
+    border-color: var(--linha-forte);
+}
+
+.panel > h2:first-child,
+.panel > h3:first-child {
+    margin-top: 0;
+}
+
+.dashboard-grid,
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+    gap: var(--e-4);
+    margin-bottom: var(--e-4);
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--e-1);
+    padding: var(--e-5);
+    background: var(--sup-1);
+    border: var(--fio) solid var(--linha);
+    border-radius: var(--r-3);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color var(--normal), background var(--normal),
+                transform var(--normal);
+}
+
+.card:hover {
+    transform: translateY(-0.125rem);
+    border-color: var(--acento-linha-forte);
+    background: var(--sup-2);
+}
+
+.card h3 {
+    margin: 0 0 0.125rem;
+    color: var(--txt-1);
+    font-size: var(--t-lg);
+}
+
+.card p {
+    margin: 0;
+    max-width: none;
+    color: var(--txt-3);
+    font-size: var(--t-md);
+    line-height: 1.55;
+}
+
+/* Sem glow permanente: no minimalismo, destaque que vale para todo mundo nao
+   destaca ninguem. Fica so um fio de acento a esquerda. */
+.painel-neon {
+    box-shadow: inset 0.125rem 0 0 var(--acento-linha);
+}
+
+.painel-neon:hover {
+    box-shadow: inset 0.125rem 0 0 var(--acento);
+}
+
+.resumo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+    gap: var(--e-3);
+    margin-bottom: var(--e-3);
+}
+
+.resumo-sev {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e-2);
+}
+
+.atalhos-logs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+    gap: var(--e-3);
+    margin-bottom: var(--e-3);
+}
+
+.atalho-log {
+    display: block;
+    padding: var(--e-4);
+    text-decoration: none;
+    color: inherit;
+}
+
+.atalho-log h4 {
+    margin: 0 0 var(--e-1);
+    font-size: var(--t-base);
+    color: var(--txt-1);
+}
+
+.atalho-log p {
+    margin: 0;
+    max-width: none;
+    font-size: var(--t-md);
+    color: var(--txt-3);
+}
+
+.terminal-box h3 {
+    margin-top: 0;
+}
+
+.terminal-text {
+    background: var(--sup-0);
+    border: var(--fio) solid var(--linha);
+    border-radius: var(--r-2);
+    padding: var(--e-3) var(--e-4);
+    font-family: var(--fonte-mono);
+    font-size: var(--t-md);
+    color: var(--ok-claro);
+}
+
+.terminal-text p {
+    margin: var(--e-1) 0;
+    max-width: none;
+}
+
+/* ── 05 · FORMULARIOS E BOTOES ───────────────────────────────────────────── */
+
+.form-grid {
+    display: grid;
+    gap: var(--e-3);
+    max-width: 40rem;
+}
+
+.form-inline {
+    display: inline;
+    margin: 0;
+}
+
+.form-inline button {
+    padding: 0.375rem 0.6875rem;
+    font-size: var(--t-sm);
+}
+
+.input-com-acao {
+    display: grid;
+    gap: var(--e-2);
+    grid-template-columns: 1fr auto;
+}
+
+label {
+    font-size: var(--t-md);
+    font-weight: 600;
+    color: var(--txt-2);
+}
+
+input,
+select,
+button {
+    font-family: inherit;
+    font-size: var(--t-md);
+    /* min-height em rem garante alvo de toque adequado tambem sob zoom */
+    min-height: 2.375rem;
+    padding: 0.5rem 0.8125rem;
+    border-radius: var(--r-1);
+    border: var(--fio) solid var(--linha-forte);
+    background: var(--sup-0);
+    color: var(--txt-1);
+    transition: border-color var(--rapido), box-shadow var(--rapido),
+                background var(--rapido);
+}
+
+input::placeholder {
+    color: var(--txt-4);
+}
+
+input:hover:not(:disabled),
+select:hover:not(:disabled) {
+    border-color: var(--linha-forte);
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: var(--acento);
+    box-shadow: 0 0 0 0.1875rem var(--acento-fundo-forte);
+}
+
+input:disabled,
+select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+select {
+    /* Seta desenhada em CSS: a CSP proibe recurso externo. */
+    appearance: none;
+    padding-right: 1.875rem;
+    background-image:
+        linear-gradient(45deg, transparent 50%, var(--txt-3) 50%),
+        linear-gradient(135deg, var(--txt-3) 50%, transparent 50%);
+    background-position:
+        calc(100% - 1rem) calc(50% + 0.0625rem),
+        calc(100% - 0.6875rem) calc(50% + 0.0625rem);
+    background-size: 0.3125rem 0.3125rem, 0.3125rem 0.3125rem;
+    background-repeat: no-repeat;
+}
+
+button,
+input[type="submit"],
+input[type="button"] {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--deep-space);
+    background: var(--acento);
+    border-color: var(--acento);
+}
+
+button:hover:not(:disabled),
+input[type="submit"]:hover:not(:disabled),
+input[type="button"]:hover:not(:disabled) {
+    background: var(--acento-forte);
+    border-color: var(--acento-forte);
+}
+
+button:active:not(:disabled) {
+    transform: translateY(0.0625rem);
+}
+
+button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.botao-secundario {
+    color: var(--txt-1);
+    background: transparent;
+    border-color: var(--linha-forte);
+}
+
+.botao-secundario:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--txt-3);
+}
+
+.botao-perigo {
+    color: #2A050C;
+    background: var(--perigo);
+    border-color: var(--perigo);
+}
+
+.botao-perigo:hover:not(:disabled) {
+    background: var(--perigo-claro);
+    border-color: var(--perigo-claro);
+}
+
+.acao-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    min-height: 2.375rem;
+    padding: 0.5rem 0.8125rem;
+    border-radius: var(--r-1);
+    border: var(--fio) solid var(--linha-forte);
+    background: transparent;
+    color: var(--acento);
+    text-decoration: none;
+    font-size: var(--t-md);
+    font-weight: 600;
+    transition: background var(--rapido), border-color var(--rapido);
+}
+
+.acao-link:hover {
+    background: var(--acento-fundo);
+    border-color: var(--acento-linha-forte);
+}
+
+.abrir-falha-botao,
+.id-falha-botao {
+    min-height: 2rem;
+    padding: 0.3125rem 0.6875rem;
+    border-radius: var(--r-1);
+    border: var(--fio) solid var(--linha-forte);
+    background: transparent;
+    color: var(--acento);
+    font-weight: 600;
+    font-size: var(--t-sm);
+    cursor: pointer;
+}
+
+.abrir-falha-botao:hover,
+.id-falha-botao:hover {
+    background: var(--acento-fundo);
+    border-color: var(--acento-linha-forte);
+}
+
+.acoes-logs,
+.celula-acoes-ia,
+.acoes-celula,
+.submenu-logs,
+.log-acoes-rodape,
+.paginacao,
+.filtro-acoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e-2);
+    align-items: center;
+}
+
+.acoes-logs {
+    gap: var(--e-3);
+    margin-bottom: var(--e-3);
+}
+
+.submenu-logs {
+    margin-top: var(--e-2);
+}
+
+.submenu-ativo {
+    border-color: var(--acento-linha-forte);
+    background: var(--acento-fundo);
+    color: var(--acento);
+}
+
+.form-limpar-logs,
+.form-abrir-pasta,
+.form-acao-secundaria {
+    margin: 0;
+}
+
+.form-abrir-pasta {
+    margin-top: var(--e-2);
+}
+
+.form-acao-secundaria {
+    margin-top: var(--e-4);
+    padding-top: var(--e-4);
+    border-top: var(--fio) solid var(--linha);
+}
+
+.painel-acoes-ia {
+    margin-top: var(--e-2);
+}
+
+.texto-ajuda {
+    font-size: var(--t-md);
+    color: var(--txt-3);
+    margin: 0 0 var(--e-2);
+}
+
+.form-filtros-falhas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+    gap: var(--e-3);
+    align-items: end;
+    margin-bottom: var(--e-3);
+    padding: var(--e-4);
+    background: var(--sup-0);
+    border: var(--fio) solid var(--linha);
+    border-radius: var(--r-2);
+}
+
+.filtro-campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    min-width: 0;
+}
+
+.filtro-campo label {
+    font-size: var(--t-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--txt-3);
+}
+
+.form-filtros-falhas input,
+.form-filtros-falhas select {
+    width: 100%;
+}
+
+.filtro-acoes {
+    align-items: stretch;
+}
+
+.form-paginacao {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e-2);
+    align-items: center;
+    margin-bottom: var(--e-2);
+}
+
+.form-paginacao select {
+    min-width: 8rem;
+}
+
+.texto-paginacao {
+    margin: var(--e-2) 0 var(--e-3);
+    max-width: none;
+    color: var(--txt-3);
+    font-size: var(--t-md);
+}
+
+.paginacao {
+    margin-top: var(--e-3);
+}
+
+.pagina-atual {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.375rem;
+    padding: 0.5rem 0.8125rem;
+    border: var(--fio) solid var(--acento-linha-forte);
+    border-radius: var(--r-1);
+    background: var(--acento-fundo);
+    color: var(--acento);
+    font-weight: 700;
+    font-size: var(--t-md);
+}
+
+/* ── 06 · TABELAS ────────────────────────────────────────────────────────── */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: var(--e-3);
+}
+
+.tabela-wrapper {
+    /* Rolagem nos dois eixos para o cabecalho fixo ter sentido em relatorio
+       longo. Antes era overflow-y: hidden, que cortava a tabela. */
+    max-height: 70vh;
+    overflow: auto;
+    border: var(--fio) solid var(--linha);
+    border-radius: var(--r-2);
+}
+
+.tabela-tatica {
+    margin-top: 0;
+    min-width: 100%;
+}
+
+th,
+td {
+    padding: 0.625rem 0.75rem;
+    text-align: left;
+    font-size: var(--t-md);
+    vertical-align: top;
+    border-bottom: var(--fio) solid var(--linha);
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* Cabecalho fixo: rolar relatorio com centenas de falhas sem perder a
+   referencia da coluna. */
+.tabela-tatica thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--sup-2);
+    color: var(--txt-3);
+    font-size: var(--t-xs);
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    border-bottom: var(--fio) solid var(--linha-forte);
+}
+
+.tabela-tatica tbody tr:hover {
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.tabela-tatica tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.linha-clicavel {
+    cursor: pointer;
+}
+
+.linha-clicavel:hover {
+    box-shadow: inset 0.125rem 0 0 var(--acento);
+}
+
+.lista-logs li {
+    margin-bottom: var(--e-1);
+}
+
+.lista-relatorios-generic {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--e-1);
+}
+
+.lista-relatorios-generic li {
+    font-size: var(--t-md);
+}
+
+.lista-programas {
+    max-height: 26rem;
+    overflow-y: auto;
+    columns: 2;
+    column-gap: var(--e-6);
+    padding-left: var(--e-5);
+    margin: 0;
+}
+
+.lista-programas li {
+    break-inside: avoid;
+    margin-bottom: var(--e-1);
+    font-size: var(--t-md);
+}
+
+.lista-links-ref {
+    padding-left: var(--e-5);
+}
+
+.lista-links-ref a,
+.links-ref-grupo a,
+.celula-links-ref a {
+    color: var(--acento);
+    text-decoration: none;
+}
+
+.lista-links-ref a:hover,
+.links-ref-grupo a:hover,
+.celula-links-ref a:hover {
+    text-decoration: underline;
+}
+
+.celula-links-ref {
+    min-width: 9rem;
+    font-size: var(--t-sm);
+}
+
+.links-ref-grupo {
+    margin-bottom: 0.375rem;
+}
+
+.links-ref-grupo a {
+    display: inline-block;
+    margin-right: 0.375rem;
+}
+
+.links-ref-titulo {
+    display: block;
+    font-size: var(--t-xs);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--v-fin-gold);
+    margin-bottom: 0.125rem;
+}
+
+.link-cwe-bloco {
+    display: block;
+    margin-bottom: var(--e-1);
+}
+
+.sem-ref {
+    color: var(--txt-4);
+    font-style: italic;
+}
+
+/* ── 07 · SEVERIDADE E STATUS ────────────────────────────────────────────── */
+
+.tag-sev {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
+    padding: 0.1875rem 0.625rem;
+    border-radius: var(--r-pilula);
+    border: var(--fio) solid transparent;
+    font-size: var(--t-sm);
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 0.125rem 0.25rem 0.125rem 0;
+    white-space: nowrap;
+}
+
+.icone-sev {
+    font-size: var(--t-md);
+}
+
+.tag-sev.critico {
+    background: var(--perigo-fundo);
+    border-color: var(--perigo);
+    color: var(--perigo-claro);
+}
+
+.tag-sev.alto {
+    background: rgba(240, 140, 90, 0.12);
+    border-color: #F08C5A;
+    color: #FFD2BB;
+}
+
+.tag-sev.medio {
+    background: var(--atencao-fundo);
+    border-color: var(--atencao);
+    color: var(--atencao-claro);
+}
+
+.tag-sev.baixo {
+    background: var(--ok-fundo);
+    border-color: var(--ok);
+    color: var(--ok-claro);
+}
+
+.score-risco-badge {
+    min-width: 6.5rem;
+    justify-content: center;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.status-ok {
+    color: var(--ok);
+    font-weight: 600;
+}
+
+.status-erro {
+    color: var(--perigo);
+    font-weight: 600;
+}
+
+.aviso-dev {
+    color: var(--v-fin-gold);
+    font-style: italic;
+}
+
+/* ── 08 · PROGRESSO ──────────────────────────────────────────────────────── */
+
+.painel-progresso {
+    margin-top: var(--e-4);
+    padding: var(--e-4);
+    border: var(--fio) solid var(--linha);
+    border-radius: var(--r-2);
+    background: var(--sup-0);
+    max-width: 40rem;
+}
+
+.barra-progresso {
+    width: 100%;
+    height: 0.5rem;
+    border-radius: var(--r-pilula);
+    background: rgba(255, 255, 255, 0.07);
+    overflow: hidden;
+}
+
+/* A largura vem do app.js em %, ja e unidade relativa. Aqui so a aparencia. */
+.barra-progresso-preenchimento {
+    width: 0;
+    height: 100%;
+    border-radius: var(--r-pilula);
+    background: var(--acento);
+    transition: width var(--normal);
+}
+
+/* ── 09 · TERMINAL DE LOG ────────────────────────────────────────────────── */
+
+.log-nome-arquivo {
+    color: var(--acento);
+    font-size: 0.95em;
+}
+
+.log-legenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e-2);
+    margin: var(--e-3) 0 var(--e-2);
+}
+
+.log-badge,
+.log-count {
+    display: inline-block;
+    padding: 0.125rem 0.625rem;
+    border-radius: var(--r-pilula);
+    border: var(--fio) solid transparent;
+    font-size: var(--t-sm);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.log-badge--error,
+.log-count--error     { background: var(--perigo-fundo);  border-color: var(--perigo);  color: var(--perigo-claro); }
+.log-badge--warning,
+.log-count--warning   { background: var(--atencao-fundo); border-color: var(--atencao); color: var(--atencao-claro); }
+.log-badge--info,
+.log-count--info      { background: var(--info-fundo);    border-color: var(--info);    color: var(--info-claro); }
+.log-badge--debug,
+.log-count--debug     { background: rgba(155, 133, 238, 0.12); border-color: var(--roxo); color: var(--roxo-claro); }
+.log-badge--trace     { background: rgba(140, 170, 195, 0.08); border-color: var(--linha-forte); color: var(--txt-3); }
+
+.log-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e-3);
+    align-items: center;
+    margin-bottom: var(--e-3);
+    font-size: var(--t-md);
+    color: var(--txt-2);
+}
+
+.log-terminal {
+    background: var(--sup-0);
+    border: var(--fio) solid var(--linha);
+    border-radius: var(--r-2);
+    padding: var(--e-2) var(--e-1);
+    max-height: 40rem;
+    overflow-y: auto;
+    font-family: var(--fonte-mono);
+    font-size: var(--t-md);
+    line-height: 1.65;
+    scroll-behavior: smooth;
+}
+
+.log-linha {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.3125rem;
+    padding: 0.1875rem var(--e-2);
+    border-radius: var(--r-1);
+    border-left: 0.125rem solid transparent;
+    transition: background var(--rapido);
+}
+
+.log-linha:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.log-linha--error   { border-left-color: var(--perigo);  }
+.log-linha--warning { border-left-color: var(--atencao); }
+.log-linha--info    { border-left-color: var(--info);    }
+.log-linha--debug   { border-left-color: var(--roxo);    }
+.log-linha--trace   { border-left-color: var(--linha-forte); }
+
+.log-icone {
+    flex-shrink: 0;
+    font-size: var(--t-sm);
+    user-select: none;
+}
+
+.log-col-label {
+    margin-right: 0.125rem;
+    font-size: var(--t-xs);
+    color: var(--txt-4);
+}
+
+.log-data {
+    font-family: var(--fonte-mono);
+    font-size: var(--t-sm);
+    color: var(--txt-4);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.log-hora {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.125rem;
+    font-family: var(--fonte-mono);
+    font-size: var(--t-sm);
+    color: var(--txt-3);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.log-ms {
+    font-size: var(--t-xs);
+    color: var(--txt-4);
+}
+
+.log-utc-badge {
+    display: inline-block;
+    font-size: var(--t-xs);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 0 0.3125rem;
+    border-radius: var(--r-1);
+    background: var(--acento-fundo);
+    color: var(--acento);
+    margin-left: 0.1875rem;
+    vertical-align: middle;
+}
+
+.log-nivel-badge {
+    display: inline-block;
+    font-size: var(--t-xs);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 0 0.4375rem;
+    border-radius: var(--r-pilula);
+    border: var(--fio) solid transparent;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.log-nivel-badge--error   { background: var(--perigo-fundo);  border-color: var(--perigo);  color: var(--perigo-claro); }
+.log-nivel-badge--warning { background: var(--atencao-fundo); border-color: var(--atencao); color: var(--atencao-claro); }
+.log-nivel-badge--info    { background: var(--info-fundo);    border-color: var(--info);    color: var(--info-claro); }
+.log-nivel-badge--debug   { background: rgba(155, 133, 238, 0.14); border-color: var(--roxo); color: var(--roxo-claro); }
+.log-nivel-badge--trace   { background: rgba(140, 170, 195, 0.10); border-color: var(--linha-forte); color: var(--txt-3); }
+
+.log-modulo {
+    font-family: var(--fonte-mono);
+    font-size: var(--t-xs);
+    color: var(--v-fin-gold);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.log-modulo::before { content: "["; color: var(--txt-4); }
+.log-modulo::after  { content: "]"; color: var(--txt-4); }
+
+.log-texto {
+    flex: 1;
+    min-width: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: var(--fonte-mono);
+    font-size: var(--t-md);
+}
+
+.log-texto--raw {
+    color: var(--txt-3);
+    font-size: var(--t-sm);
+}
+
+.log-linha--error   .log-texto { color: var(--perigo-claro); }
+.log-linha--warning .log-texto { color: var(--atencao-claro); }
+.log-linha--info    .log-texto { color: var(--info-claro); }
+.log-linha--debug   .log-texto { color: var(--roxo-claro); }
+.log-linha--trace   .log-texto { color: var(--txt-3); }
+
+.log-acoes-rodape {
+    margin-top: var(--e-2);
+}
+
+.log-voltar {
+    margin-top: var(--e-3);
+}
+
+.log-vazio {
+    color: var(--txt-3);
+    font-style: italic;
+}
+
+/* Dica didatica das linhas de log */
+
+.log-dica-toggle {
+    flex-shrink: 0;
+    min-height: 0;
+    padding: 0 0.4375rem;
+    font-size: var(--t-md);
+    line-height: 1.4;
+    margin-left: var(--e-1);
+    border-radius: var(--r-1);
+    border: var(--fio) solid var(--linha-forte);
+    background: transparent;
+    color: var(--acento);
+    cursor: pointer;
+}
+
+.log-dica-toggle:hover,
+.log-dica-toggle--ativo {
+    background: var(--acento-fundo);
+    border-color: var(--acento-linha-forte);
+}
+
+.log-dica {
+    margin: 0 var(--e-2) var(--e-1) var(--e-6);
+    padding: var(--e-3) var(--e-4);
+    border-left: 0.125rem solid var(--v-fin-gold);
+    border-radius: 0 var(--r-2) var(--r-2) 0;
+    background: var(--atencao-fundo);
+    font-size: var(--t-md);
+}
+
+.log-dica-titulo {
+    font-weight: 700;
+    font-size: var(--t-md);
+    letter-spacing: 0.02em;
+    color: var(--v-fin-gold);
+    margin-bottom: var(--e-1);
+}
+
+.log-dica-corpo p {
+    margin: var(--e-1) 0;
+    max-width: none;
+    color: var(--txt-2);
+}
+
+.log-dica-acao {
+    margin-top: var(--e-1) !important;
+    padding: 0.375rem 0.6875rem;
+    border-radius: var(--r-1);
+    border-left: 0.125rem solid var(--info);
+    background: var(--info-fundo);
+    color: var(--info-claro);
+}
+
+.log-bruto {
+    border: var(--fio) solid var(--linha);
+    border-radius: var(--r-2);
+    background: var(--sup-0);
+    padding: var(--e-3);
+}
+
+.log-bruto pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #B8EDE3;
+    font-family: var(--fonte-mono);
+    font-size: var(--t-md);
+}
+
+/* ── 10 · DOCUMENTACAO ───────────────────────────────────────────────────── */
+
+.docs-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 18rem) minmax(0, 1fr);
+    gap: var(--e-4);
+    align-items: start;
+}
+
+/* Indice acompanha a rolagem: em documento longo, voltar ao topo so para trocar
+   de arquivo era o atrito mais comum desta tela. */
+.docs-menu {
+    position: sticky;
+    top: 4.5rem;
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+}
+
+.docs-menu h3 {
+    margin-top: 0;
+}
+
+.docs-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--e-1);
+}
+
+.docs-menu .acao-link {
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+    font-weight: 500;
+    border-color: transparent;
+    color: var(--txt-2);
+}
+
+.docs-menu .acao-link:hover {
+    color: var(--acento);
+}
+
+.docs-menu .submenu-ativo {
+    color: var(--acento);
+    border-color: var(--acento-linha-forte);
+}
+
+.docs-conteudo h3 {
+    margin-top: 0;
+}
+
+.docs-caminho {
+    margin: 0 0 var(--e-2);
+    max-width: none;
+    color: var(--txt-3);
+    font-size: var(--t-md);
+}
+
+.docs-renderizado {
+    line-height: 1.75;
+    color: var(--txt-2);
+    font-size: var(--t-base);
+}
+
+.docs-renderizado p {
+    max-width: var(--medida);
+}
+
+.docs-renderizado h1,
+.docs-renderizado h2,
+.docs-renderizado h3,
+.docs-renderizado h4 {
+    color: var(--txt-1);
+    margin: 1.6em 0 0.5em;
+}
+
+.docs-renderizado h2 {
+    padding-bottom: var(--e-2);
+    border-bottom: var(--fio) solid var(--linha);
+}
+
+.docs-renderizado h1:first-child,
+.docs-renderizado h2:first-child {
+    margin-top: 0;
+}
+
+.docs-renderizado ul,
+.docs-renderizado ol {
+    padding-left: 1.3em;
+}
+
+.docs-renderizado li {
+    margin: 0.3em 0;
+}
+
+.docs-renderizado a {
+    color: var(--acento);
+    text-decoration: none;
+    border-bottom: var(--fio) solid var(--acento-linha);
+}
+
+.docs-renderizado a:hover {
+    border-bottom-color: var(--acento);
+}
+
+.docs-renderizado img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--r-2);
+}
+
+.docs-renderizado blockquote {
+    margin: var(--e-4) 0;
+    padding: var(--e-2) var(--e-4);
+    border-left: 0.125rem solid var(--acento-linha-forte);
+    background: var(--acento-fundo);
+    border-radius: 0 var(--r-2) var(--r-2) 0;
+}
+
+.docs-renderizado pre {
+    overflow-x: auto;
+    padding: var(--e-3) var(--e-4);
+    border: var(--fio) solid var(--linha);
+    border-radius: var(--r-2);
+    background: var(--sup-0);
+}
+
+.docs-renderizado .mermaid {
+    width: 100%;
+    overflow-x: auto;
+    padding: var(--e-4);
+    margin: var(--e-4) 0;
+    background: var(--sup-0);
+    border: var(--fio) solid var(--linha);
+    border-radius: var(--r-2);
+    text-align: center;
+}
+
+.docs-renderizado table {
+    display: block;
+    overflow-x: auto;
+    white-space: normal;
+    max-width: 100%;
+}
+
+.docs-renderizado th {
+    background: var(--sup-2);
+    color: var(--txt-3);
+    text-transform: uppercase;
+    font-size: var(--t-xs);
+    letter-spacing: 0.06em;
+}
+
+.doc-codigo {
+    margin: var(--e-3) 0;
+    padding: var(--e-3);
+    border-radius: var(--r-2);
+    border: var(--fio) solid var(--linha);
+    background: var(--sup-0);
+    overflow-x: auto;
+}
+
+/* ── 11 · ALERTAS E TOASTS ───────────────────────────────────────────────── */
+
+.mensagens {
+    display: grid;
+    gap: var(--e-2);
+    margin-bottom: var(--e-4);
+}
+
+.alerta {
+    display: flex;
+    align-items: baseline;
+    gap: var(--e-2);
+    padding: var(--e-3) var(--e-4);
+    border-radius: var(--r-2);
+    border: var(--fio) solid transparent;
+    border-left-width: 0.1875rem;
+    font-size: var(--t-base);
+    transition: opacity 400ms ease;
+}
+
+.alerta.success {
+    background: var(--ok-fundo);
+    border-color: var(--ok);
+    color: var(--ok-claro);
+}
+
+.alerta.error {
+    background: var(--perigo-fundo);
+    border-color: var(--perigo);
+    color: var(--perigo-claro);
+}
+
+.alerta.info {
+    background: var(--info-fundo);
+    border-color: var(--info);
+    color: var(--info-claro);
+}
+
+.toast-container {
+    position: fixed;
+    right: var(--e-5);
+    bottom: var(--e-5);
+    z-index: 9000;
+    display: flex;
+    flex-direction: column;
+    gap: var(--e-2);
+    pointer-events: none;
+    max-width: min(24rem, calc(100% - var(--e-6)));
+}
+
+.toast {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--e-2);
+    pointer-events: auto;
+    padding: var(--e-3) var(--e-4);
+    border-radius: var(--r-2);
+    border: var(--fio) solid transparent;
+    border-left-width: 0.1875rem;
+    font-size: var(--t-base);
+    line-height: 1.45;
+    backdrop-filter: blur(0.625rem);
+    box-shadow: var(--sombra-3);
+    cursor: pointer;
+    animation: toastIn 220ms cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+.toast.toast--ok {
+    background: rgba(10, 46, 30, 0.96);
+    border-color: var(--ok);
+    color: var(--ok-claro);
+}
+
+.toast.toast--erro {
+    background: rgba(70, 10, 22, 0.96);
+    border-color: var(--perigo);
+    color: var(--perigo-claro);
+}
+
+.toast.toast--info {
+    background: rgba(10, 28, 52, 0.96);
+    border-color: var(--info);
+    color: var(--info-claro);
+}
+
+.toast--saindo {
+    animation: toastOut 250ms ease forwards;
+}
+
+@keyframes toastIn {
+    from { opacity: 0; transform: translateX(1rem); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toastOut {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(1rem); }
+}
+
+/* ── 12 · TOOLTIP ────────────────────────────────────────────────────────── */
+
+/* `position: absolute` e obrigatorio: o app.js escreve left/top em coordenadas
+   de documento (rect + window.scrollX/Y). Trocar para fixed desloca a dica. */
+.tooltip-global {
+    position: absolute;
+    z-index: 9999;
+    pointer-events: none;
+    max-width: 21rem;
+    padding: 0.5rem 0.6875rem;
+    border-radius: var(--r-2);
+    border: var(--fio) solid var(--linha-forte);
+    background: rgba(8, 13, 23, 0.98);
+    color: var(--txt-1);
+    font-size: var(--t-sm);
+    line-height: 1.45;
+    white-space: normal;
+    box-shadow: var(--sombra-2);
+}
+
+/* ── 13 · ARQUITETURA (IMAGENS) ──────────────────────────────────────────── */
+
+.figura-arquitetura {
+    margin: var(--e-3) auto var(--e-2);
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.panel-imagem-arquitetura {
+    padding: var(--e-4);
+}
+
+.arquitetura-scroll {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: var(--e-1);
+}
+
+.arquitetura-scroll--svg {
+    display: flex;
+    justify-content: center;
+}
+
+.imagem-arquitetura {
+    display: block;
+    width: min(100%, 80rem);
+    height: auto;
+    max-height: 78vh;
+    object-fit: contain;
+    border-radius: var(--r-2);
+    border: var(--fio) solid var(--linha);
+    background: var(--sup-0);
+}
+
+.imagem-arquitetura-raster {
+    width: min(100%, 80rem);
+}
+
+.imagem-arquitetura-svg {
+    width: min(100%, 47rem);
+    max-height: none;
+}
+
+/* ── 14 · UTILITARIOS ────────────────────────────────────────────────────── */
+
+/* Contrato de visibilidade do app.js e do log-terminal.js. */
+.oculto {
+    display: none !important;
+}
+
+/* ── 15 · RESPONSIVO ─────────────────────────────────────────────────────── */
+/* Pontos de quebra em `em`: acompanham o zoom de fonte do usuario, nao apenas a
+   largura fisica da tela. 75em ≈ 1200px · 61.25em ≈ 980px · 43.75em ≈ 700px
+   · 30em ≈ 480px, com a fonte padrao de 16px. */
+
+@media (max-width: 75em) {
+    :root {
+        --largura: 100%;
+    }
+
+    .docs-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .docs-menu {
+        position: static;
+        max-height: none;
+    }
+}
+
+@media (max-width: 61.25em) {
+    .topo-conteudo {
+        flex-wrap: wrap;
+        min-height: 0;
+        padding-top: var(--e-2);
+        padding-bottom: var(--e-2);
+        gap: var(--e-2);
+    }
+
+    .topo h1 {
+        font-size: var(--t-sm);
+    }
+
+    .logo-app {
+        height: 1.75rem;
+    }
+
+    /* Menu vira faixa rolavel na horizontal em vez de grade de duas colunas:
+       preserva a ordem de leitura e nao empurra o conteudo para baixo. */
+    .menu-topo {
+        flex-basis: 100%;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: var(--e-1);
+        scrollbar-width: none;
+    }
+
+    .menu-topo::-webkit-scrollbar {
+        display: none;
+    }
+
+    .menu-topo a {
+        flex-shrink: 0;
+    }
+
+    .input-com-acao {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .form-grid {
+        max-width: 100%;
+    }
+
+    .log-terminal {
+        max-height: 58vh;
+    }
+
+    .tabela-wrapper {
+        max-height: none;
+        border: none;
+    }
+
+    /* Tabela vira lista de cartoes; o rotulo vem de data-label no template. */
+    .tabela-tatica thead {
+        display: none;
+    }
+
+    .tabela-tatica,
+    .tabela-tatica tbody,
+    .tabela-tatica tr,
+    .tabela-tatica td {
+        display: block;
+        width: 100%;
+    }
+
+    .tabela-tatica tr {
+        margin-bottom: var(--e-2);
+        padding: var(--e-3);
+        border: var(--fio) solid var(--linha);
+        border-radius: var(--r-2);
+    }
+
+    .tabela-tatica td {
+        border: none;
+        border-bottom: var(--fio) dashed var(--linha);
+        padding: 0.4375rem 0;
+    }
+
+    .tabela-tatica td:last-child {
+        border-bottom: none;
+    }
+
+    .tabela-tatica td::before {
+        content: attr(data-label) ": ";
+        color: var(--txt-3);
+        font-weight: 700;
+        font-size: var(--t-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-right: var(--e-1);
+    }
+
+    .resumo-grid,
+    .form-filtros-falhas {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .filtro-acoes,
+    .form-paginacao,
+    .acoes-logs,
+    .submenu-logs {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .tooltip-global {
+        max-width: min(92%, 20rem);
+    }
+}
+
+@media (max-width: 43.75em) {
+    .topo {
+        position: static;
+    }
+
+    .dashboard-grid,
+    .cards,
+    .atalhos-logs-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .card {
+        padding: var(--e-4);
+    }
+
+    .acao-link,
+    button,
+    input[type="submit"],
+    input[type="button"] {
+        width: 100%;
+    }
+
+    .form-inline,
+    .form-inline button {
+        width: 100%;
+    }
+
+    .acoes-celula,
+    .celula-acoes-ia,
+    .paginacao,
+    .log-acoes-rodape {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .lista-programas {
+        columns: 1;
+    }
+
+    .log-dica {
+        margin-left: var(--e-3);
+        padding: var(--e-2) var(--e-3);
+    }
+
+    .toast-container {
+        right: var(--e-3);
+        left: var(--e-3);
+        bottom: var(--e-3);
+        max-width: none;
+    }
+}
+
+@media (max-width: 30em) {
+    .logo-app {
+        height: 1.5rem;
+    }
+
+    th,
+    td {
+        font-size: var(--t-sm);
+    }
+
+    .log-terminal {
+        max-height: 50vh;
+        padding: var(--e-1);
+    }
+
+    .badge-bar img {
+        max-height: 1.25rem;
+    }
+}
+
+/* ── 16 · IMPRESSAO E MOVIMENTO REDUZIDO ─────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .card:hover {
+        transform: none;
+    }
+}
+
+/* Relatorio de scan e parecer de IA sao impressos e anexados em trabalho.
+   Sem isto, a folha sai preta e ilegivel. */
+@media print {
+    body {
+        background: #FFFFFF;
+        color: #101010;
+        font-size: 10pt;
+    }
+
+    .topo,
+    .rodape-projeto,
+    .toast-container,
+    .tooltip-global,
+    .acoes-logs,
+    .submenu-logs,
+    .paginacao,
+    .form-paginacao,
+    .form-filtros-falhas,
+    .filtro-acoes,
+    .log-acoes-rodape,
+    .log-voltar,
+    .acoes-celula,
+    .celula-acoes-ia {
+        display: none !important;
+    }
+
+    .container {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    .panel,
+    .card {
+        break-inside: avoid;
+        border: 0.0625rem solid #BBBBBB;
+        background: #FFFFFF;
+        color: #101010;
+    }
+
+    h1, h2, h3, h4,
+    .card h3,
+    .card p,
+    .docs-renderizado {
+        color: #101010;
+    }
+
+    .tabela-wrapper {
+        max-height: none;
+        overflow: visible;
+        border-color: #BBBBBB;
+    }
+
+    .tabela-tatica thead th {
+        position: static;
+        background: #EDEDED;
+        color: #101010;
+        border-bottom: 0.0625rem solid #999999;
+    }
+
+    th,
+    td {
+        border-bottom: 0.0625rem solid #DDDDDD;
+    }
+
+    .log-terminal {
+        max-height: none;
+        overflow: visible;
+        background: #FFFFFF;
+    }
+
+    .log-texto,
+    .log-linha--error .log-texto,
+    .log-linha--warning .log-texto,
+    .log-linha--info .log-texto,
+    .log-linha--debug .log-texto,
+    .log-linha--trace .log-texto {
+        color: #101010;
+    }
+
+    .tag-sev,
+    .log-badge,
+    .log-count,
+    .log-nivel-badge {
+        border-color: #999999;
+        color: #101010;
+        background: #F2F2F2;
+    }
+
+    a {
+        color: #101010;
+        text-decoration: underline;
+    }
+}

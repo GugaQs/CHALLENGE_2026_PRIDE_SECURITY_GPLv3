@@ -1,0 +1,27 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Scan{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>🔎 Executar scan de projeto</h2>
+    <p>Informe um caminho absoluto de pasta no servidor local.</p>
+    <form method="post" action="{{ url_for('scan.executar_scan_rota') }}" class="form-grid" id="form-scan">
+        <label for="caminho">📁 Caminho do projeto</label>
+        <div class="input-com-acao">
+            <input id="caminho" name="caminho" type="text" placeholder="Ex.: G:\projetos\app" required>
+            <button type="button" class="botao-secundario btn-buscar-pasta" data-campo="caminho" title="Abre o explorador de arquivos para escolher a pasta do projeto no disco local">📂 Buscar pasta</button>
+        </div>
+
+        <button type="submit" id="btn-iniciar-scan" title="Inicia a varredura de seguranca no caminho informado; acompanhe o progresso no painel abaixo">🚀 Iniciar scan</button>
+    </form>
+</section>
+
+{% include "painel_progresso/_painel_progresso.html" %}
+{% endblock %}

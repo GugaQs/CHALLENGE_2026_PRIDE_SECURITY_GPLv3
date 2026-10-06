@@ -1,0 +1,130 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Logs de Scan{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>📚 Submenu de logs</h2>
+    <div class="submenu-logs">
+        <a class="acao-link {% if secao_ativa == 'sistema' %}submenu-ativo{% endif %}" href="{{ url_for('scan.pagina_logs', secao='sistema') }}">🗃️ Logs do Sistema</a>
+        <a class="acao-link {% if secao_ativa == 'scan' %}submenu-ativo{% endif %}" href="{{ url_for('scan.pagina_logs', secao='scan') }}">📄 Dados Internos do Scan</a>
+    </div>
+</section>
+
+{% if secao_ativa == 'sistema' %}
+    <section class="panel">
+        <h2>🗃️ Logs do sistema</h2>
+        {% if logs_sistema %}
+            <p>Lista geral de logs técnicos do sistema (separada dos relatórios de vulnerabilidade).</p>
+            <div class="tabela-wrapper">
+                <table class="tabela-tatica">
+                    <thead>
+                        <tr>
+                            <th>🧾 Arquivo</th>
+                        <th>🗂️ Origem</th>
+                            <th>🕒 Modificado em</th>
+                            <th>📦 Tamanho</th>
+                            <th>🔍 Visualizar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs_sistema %}
+                            <tr>
+                                <td data-label="Arquivo"><strong>{{ log.nome_exibicao }}</strong></td>
+                                <td data-label="Origem">
+                                    {% if log.origem == 'sistema' %}🛡️ Sistema{% else %}🔎 Scan{% endif %}
+                                </td>
+                                <td data-label="Modificado em">{{ log.modificado_em }}</td>
+                                <td data-label="Tamanho">
+                                    {{ log.tamanho_legivel }}
+                                </td>
+                                <td data-label="Visualizar">
+                                    <a class="acao-link" href="{{ url_for('scan.visualizar_log_sistema', nome_log=log.nome_arquivo) }}">📜 Abrir</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>📭 Nenhum log de sistema encontrado.</p>
+        {% endif %}
+    </section>
+{% else %}
+    <section class="panel">
+        <h2>📄 Relatorios de scan (dados internos)</h2>
+        <div class="acoes-logs">
+            <a class="acao-link" href="{{ url_for('scan.pagina_scan') }}">🆕 Novo scan</a>
+            <form
+                method="post"
+                action="{{ url_for('scan.limpar_logs_rota') }}"
+                class="form-limpar-logs"
+                data-confirm="Remover todos os relatorios JSON de scan? Esta acao nao pode ser desfeita."
+            >
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="botao-perigo" title="Remove permanentemente todos os relatorios JSON de scan; esta acao nao pode ser desfeita">🧹 Limpar relatorios</button>
+            </form>
+        </div>
+        {% if logs_scan %}
+            <p>🔎 Selecione um relatorio para navegar nos detalhes das vulnerabilidades.</p>
+            <div class="tabela-wrapper">
+                <table class="tabela-tatica">
+                    <thead>
+                        <tr>
+                            <th>🧾 Relatorio</th>
+                            <th>📁 Projeto</th>
+                            <th>🕒 Data</th>
+                            <th>📦 Arquivos</th>
+                            <th>🚨 Falhas</th>
+                            <th>🚦 Severidade</th>
+                            <th>🎯 Score</th>
+                            <th>💽 Tamanho</th>
+                            <th>🔍 Abrir</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs_scan %}
+                            <tr class="linha-clicavel" data-href="{{ url_for('scan.detalhe_log', nome_log=log.nome_arquivo) }}">
+                                <td data-label="Relatorio"><strong>{{ log.nome_arquivo }}</strong></td>
+                                <td data-label="Projeto">{{ log.projeto }}</td>
+                                <td data-label="Data">{{ log.timestamp }}</td>
+                                <td data-label="Arquivos">{{ log.total_arquivos }}</td>
+                                <td data-label="Falhas">{{ log.total_falhas }}</td>
+                                <td data-label="Severidade">
+                                    <span class="tag-sev critico">C {{ log.critico }}</span>
+                                    <span class="tag-sev alto">A {{ log.alto }}</span>
+                                    <span class="tag-sev medio">M {{ log.medio }}</span>
+                                    <span class="tag-sev baixo">B {{ log.baixo }}</span>
+                                </td>
+                                <td data-label="Score">
+                                    {% if not log.filtrado %}
+                                        {% set ns = 'critico' if log.score_risco > 80 else ('alto' if log.score_risco > 50 else ('medio' if log.score_risco > 20 else 'baixo')) %}
+                                        <span class="tag-sev {{ ns }}">{{ log.score_risco }}/100</span>
+                                    {% else %}
+                                        <span class="sem-ref">—</span>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Tamanho">{{ log.tamanho_kb }} KB</td>
+                                <td data-label="Abrir">
+                                    <div class="acoes-celula">
+                                        <a class="acao-link" href="{{ url_for('scan.detalhe_log', nome_log=log.nome_arquivo) }}">🔍 Ver</a>
+                                        <a class="acao-link" href="{{ url_for('scan.visualizar_log_json', nome_log=log.nome_arquivo) }}">🧾 JSON</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>🧼 Nenhum log JSON encontrado. Ambiente limpo para novas buscas.</p>
+        {% endif %}
+    </section>
+{% endif %}
+{% endblock %}

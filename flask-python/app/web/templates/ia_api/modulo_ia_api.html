@@ -1,0 +1,59 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}IA API{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>☁️ Scan de Projeto — IA via API</h2>
+    <p>Provedor: <strong>{{ config.provedor }}</strong>
+        | Chave: {% if config.tem_chave %}<span class="status-ok">{{ config.api_key_mascarada }}</span>{% else %}<span class="status-erro">nao configurada</span>{% endif %}
+    </p>
+</section>
+
+<section class="panel">
+    <h3>1 — Configurar API key</h3>
+    <form method="post" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="acao" value="api_key">
+        <label for="api_key">API key</label>
+        <input id="api_key" name="api_key" type="password" placeholder="sk-..." autocomplete="off">
+        <button type="submit" title="Grava a chave de API no disco de forma mascarada para uso nas varreduras remotas">Salvar chave (mascarada em disco)</button>
+    </form>
+</section>
+
+<section class="panel">
+    <h3>2 — Selecionar provedor</h3>
+    <form method="post" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="acao" value="provedor">
+        <label for="provedor">Provedor</label>
+        <select id="provedor" name="provedor">
+            {% for p in provedores %}
+                <option value="{{ p }}" {% if config.provedor == p %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" title="Define o provedor de IA (OpenAI, Claude, Gemini, etc.) para as proximas varreduras">Salvar provedor</button>
+    </form>
+</section>
+
+<section class="panel">
+    <h3>3 — Iniciar varredura remota</h3>
+    <form method="post" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="acao" value="varredura">
+        <label for="caminho-api">Caminho do projeto</label>
+        <div class="input-com-acao">
+            <input id="caminho-api" name="caminho" type="text" required>
+            <button type="button" class="botao-secundario btn-buscar-pasta" data-campo="caminho-api" title="Abre o explorador de arquivos para escolher a pasta do projeto no disco local">📂 Buscar pasta</button>
+        </div>
+        <button type="submit" title="Envia o projeto para analise via API de IA externa (funcionalidade em desenvolvimento)">Iniciar varredura</button>
+    </form>
+    <p class="texto-ajuda">Varredura remota completa ainda em desenvolvimento.</p>
+</section>
+{% endblock %}

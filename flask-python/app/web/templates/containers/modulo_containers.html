@@ -1,0 +1,61 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Scan Containers{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>🐳 Scan de Containers Docker</h2>
+    <p>Localiza Dockerfile e arquivos docker-compose no projeto.</p>
+</section>
+
+<section class="panel">
+    <form class="form-grid" id="form-containers">
+        <label for="caminho-docker">Caminho do projeto</label>
+        <div class="input-com-acao">
+            <input id="caminho-docker" name="caminho" type="text" placeholder="Ex.: G:\projetos\app" required>
+            <button type="button" class="botao-secundario btn-buscar-pasta" data-campo="caminho-docker" title="Abre o explorador de arquivos para escolher a pasta do projeto no disco local">📂 Buscar pasta</button>
+        </div>
+        <button type="submit" id="btn-scan-containers" title="Busca Dockerfile, docker-compose.yml e arquivos Docker na pasta informada">Escanear artefatos Docker</button>
+    </form>
+</section>
+
+{% include "painel_progresso/_painel_progresso.html" %}
+
+<section class="panel oculto" id="painel-resultado-containers">
+    <h3 id="titulo-resultado-containers">Artefatos encontrados</h3>
+    <p id="mensagem-resultado-containers"></p>
+    <div id="tabela-containers-wrapper"></div>
+</section>
+
+{% if artefatos is not none %}
+<section class="panel">
+    <h3>Artefatos encontrados ({{ artefatos|length }})</h3>
+    {% if artefatos %}
+        <table class="tabela-tatica">
+            <thead>
+                <tr>
+                    <th>Arquivo</th>
+                    <th>Caminho relativo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in artefatos %}
+                    <tr>
+                        <td>{{ item.nome }}</td>
+                        <td><code>{{ item.caminho_relativo }}</code></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Nenhum Dockerfile ou compose encontrado.</p>
+    {% endif %}
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,7 @@
+Teste Nome;teste@email.com;12345678900
+Paulo André Carminati;rm570877@fiap.com.br;29902327885
+esdfsd;sdfsdf;sdfsd
+07/04/2026 | 18:09:10;dssdf;sdfsd;sdfsd
+07/04/2026 | 18:13:25;2323sedse;22323dssd;2232sdsd
+07/04/2026 | 18:14:28;2323;sdfsdf;12323
+23/04/2026 | 21:58:01;23/04/2026 | 18:58:01;23/04/2026 | 18:58:01 -0300;sfdf;sdfsdf;sdfsdf

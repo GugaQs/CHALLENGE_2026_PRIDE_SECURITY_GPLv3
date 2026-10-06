@@ -1,0 +1,23 @@
+# Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+# Licensed under the GNU General Public License v3.0.
+# See LICENSE.md for the full license text.
+
+services:
+  app:
+    build: .
+    image: pride-security-app:latest
+    container_name: pride-security-container
+    # Permite a interação com o terminal CLI no terminal
+    stdin_open: true
+    tty: true
+    volumes:
+      # MAPEAMENTO PARA PERSISTÊNCIA DOS USUÁRIOS NO HOST SE QUISER (OPCIONAL)
+      # Aqui permite que os dados salvos no container persistam na máquina local
+      - .:/app
+    # Define o ambiente para o Python
+    environment:
+      - PYTHONUNBUFFERED=1
+
+networks:
+  default:
+    name: pride-security-network

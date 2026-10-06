@@ -1,0 +1,22 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}JSON do Log{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>🧾 JSON bruto do relatorio: {{ nome_log }}</h2>
+    <p>Visualizacao tecnica do arquivo JSON completo.</p>
+    <div class="log-bruto">
+        <pre>{{ conteudo_json }}</pre>
+    </div>
+    <p>
+        <a class="acao-link" href="{{ url_for('scan.detalhe_log', nome_log=nome_log) }}">⬅️ Voltar para detalhes de falhas</a>
+    </p>
+</section>
+{% endblock %}

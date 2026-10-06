@@ -1,0 +1,113 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Logs do Sistema{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>📜 Log de Sistema</h2>
+    <p>Pasta base: <code>{{ pasta_base }}</code></p>
+</section>
+
+<section class="panel">
+    <h3>⚡ Atalhos rapidos (menu CLI)</h3>
+    <div class="atalhos-logs-grid">
+        <a class="card painel-neon atalho-log" href="{{ url_for('logs.atalho_erro_sistema', linhas=80) }}">
+            <h4>⚠️ {{ log_erro_padrao }}</h4>
+            <p>Ultimas 80 linhas do log central de erros</p>
+        </a>
+        <a class="card painel-neon atalho-log" href="{{ url_for('logs.atalho_amd_sistema') }}">
+            <h4>🔴 AMD system</h4>
+            <p>logs/amd/system/sistema_amd.log</p>
+        </a>
+        <a class="card painel-neon atalho-log" href="{{ url_for('logs.atalho_nvidia_sistema') }}">
+            <h4>🟢 NVIDIA system</h4>
+            <p>logs/nvidia/system/sistema_nvidia.log</p>
+        </a>
+        <a class="card painel-neon atalho-log" href="{{ url_for('scan.pagina_logs', secao='scan') }}">
+            <h4>📂 Generic reports</h4>
+            <p>Relatorios JSON do scan classico</p>
+        </a>
+    </div>
+    <form method="post" action="{{ url_for('logs.abrir_pasta_logs') }}" class="form-abrir-pasta">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="botao-secundario" title="Abre a pasta de logs do ASPM no Explorador de Arquivos do Windows">📁 Abrir pasta logs no explorador</button>
+    </form>
+</section>
+
+{% if relatorios_generic %}
+<section class="panel">
+    <h3>📄 Relatorios em generic/reports</h3>
+    <ul class="lista-relatorios-generic">
+        {% for nome in relatorios_generic[:10] %}
+            <li>
+                <a class="acao-link" href="{{ url_for('scan.detalhe_log', nome_log=nome) }}">🔍 {{ nome }}</a>
+            </li>
+        {% endfor %}
+        {% if relatorios_generic|length > 10 %}
+            <li>
+                <a class="acao-link" href="{{ url_for('scan.pagina_logs', secao='scan') }}">📋 Ver todos ({{ relatorios_generic|length }}) em Relatorios →</a>
+            </li>
+        {% endif %}
+    </ul>
+</section>
+{% endif %}
+
+<section class="panel">
+    <h3>🗂️ Todos os arquivos</h3>
+    {% if arquivos %}
+        <p class="texto-paginacao">
+            Exibindo <strong>{{ (pagina - 1) * 15 + 1 }}</strong>–<strong>{{ (pagina - 1) * 15 + arquivos|length }}</strong>
+            de <strong>{{ total_arquivos }}</strong> arquivos
+        </p>
+        <div class="tabela-wrapper">
+            <table class="tabela-tatica">
+                <thead>
+                    <tr>
+                        <th>🗂️ Categoria</th>
+                        <th>📄 Arquivo</th>
+                        <th>📦 Tamanho</th>
+                        <th>🔍 Acao</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in arquivos %}
+                        <tr>
+                            <td data-label="Categoria">
+                                {% if 'amd' in item.categoria %}🔴{% elif 'nvidia' in item.categoria %}🟢{% elif 'generic' in item.categoria %}📂{% else %}🛡️{% endif %}
+                                {{ item.categoria }}
+                            </td>
+                            <td data-label="Arquivo"><strong>{{ item.nome }}</strong></td>
+                            <td data-label="Tamanho">{{ item.tamanho_kb }} KB</td>
+                            <td data-label="Acao">
+                                <a class="acao-link" href="{{ url_for('logs.ver_log', caminho_relativo=item.caminho_relativo) }}">📜 Ver log</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if total_paginas > 1 %}
+        <nav class="paginacao" aria-label="Paginacao de arquivos de log">
+            {% if pagina > 1 %}
+                <a class="acao-link" href="{{ url_for('logs.pagina_logs_sistema', pagina=1) }}">⏮️ Primeira</a>
+                <a class="acao-link" href="{{ url_for('logs.pagina_logs_sistema', pagina=pagina-1) }}">⬅️ Anterior</a>
+            {% endif %}
+            <span class="pagina-atual">📖 Pagina {{ pagina }} de {{ total_paginas }}</span>
+            {% if pagina < total_paginas %}
+                <a class="acao-link" href="{{ url_for('logs.pagina_logs_sistema', pagina=pagina+1) }}">Proxima ➡️</a>
+                <a class="acao-link" href="{{ url_for('logs.pagina_logs_sistema', pagina=total_paginas) }}">Ultima ⏭️</a>
+            {% endif %}
+        </nav>
+        {% endif %}
+    {% else %}
+        <p>Nenhum arquivo de log encontrado.</p>
+    {% endif %}
+</section>
+{% endblock %}

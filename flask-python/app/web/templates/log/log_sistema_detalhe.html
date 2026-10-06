@@ -1,0 +1,116 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Log de Sistema{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>📜 Log: <code class="log-nome-arquivo">{{ nome_log }}</code></h2>
+
+    {% if linhas_log %}
+        {# ── Contadores ──────────────────────────────────────────── #}
+        {% set ns = namespace(e=0, w=0, i=0, d=0) %}
+        {% for l in linhas_log %}
+            {% if l.nivel == "error"   %}{% set ns.e = ns.e + 1 %}{% endif %}
+            {% if l.nivel == "warning" %}{% set ns.w = ns.w + 1 %}{% endif %}
+            {% if l.nivel == "info"    %}{% set ns.i = ns.i + 1 %}{% endif %}
+            {% if l.nivel == "debug"   %}{% set ns.d = ns.d + 1 %}{% endif %}
+        {% endfor %}
+
+        <div class="log-stats">
+            <span>📄 <strong>{{ linhas_log|length }}</strong> linhas</span>
+            {% if ns.e %}<span class="log-count log-count--error">🛑 {{ ns.e }} erros</span>{% endif %}
+            {% if ns.w %}<span class="log-count log-count--warning">⚠️ {{ ns.w }} avisos</span>{% endif %}
+            {% if ns.i %}<span class="log-count log-count--info">🔵 {{ ns.i }} info</span>{% endif %}
+            {% if ns.d %}<span class="log-count log-count--debug">🔧 {{ ns.d }} debug</span>{% endif %}
+        </div>
+
+        {# ── Legenda ─────────────────────────────────────────────── #}
+        <div class="log-legenda">
+            <span class="log-badge log-badge--error">🛑 ERROR / CRITICAL</span>
+            <span class="log-badge log-badge--warning">⚠️ WARNING</span>
+            <span class="log-badge log-badge--info">🔵 INFO</span>
+            <span class="log-badge log-badge--debug">🔧 DEBUG</span>
+            <span class="log-badge log-badge--trace">▸ outros</span>
+        </div>
+
+        {# ── Terminal ────────────────────────────────────────────── #}
+        <div class="log-terminal" id="log-terminal">
+            {% for l in linhas_log %}
+                <div class="log-linha log-linha--{{ l.nivel }}">
+
+                    {# ícone de nível #}
+                    <span class="log-icone" title="{{ l.nivel_raw }}">
+                        {% if l.nivel == "error"   %}🛑
+                        {% elif l.nivel == "warning" %}⚠️
+                        {% elif l.nivel == "info"    %}🔵
+                        {% elif l.nivel == "debug"   %}🔧
+                        {% else %}▸
+                        {% endif %}
+                    </span>
+
+                    {% if l.estruturado %}
+                        {# ── Linha estruturada com colunas ──────────── #}
+                        <span class="log-data" title="Data (UTC local do servidor)">
+                            <span class="log-col-label">📅</span>{{ l.data }}
+                        </span>
+                        <span class="log-hora">
+                            <span class="log-col-label">🕐</span>{{ l.hora }}<span class="log-ms">,{{ l.ms }}</span>
+                            <span class="log-utc-badge">UTC</span>
+                        </span>
+                        <span class="log-nivel-badge log-nivel-badge--{{ l.nivel }}">{{ l.nivel_raw }}</span>
+                        {% if l.modulo %}
+                            <span class="log-modulo" title="Modulo">{{ l.modulo }}</span>
+                        {% endif %}
+                        <span class="log-texto">{{ l.mensagem }}</span>
+                        {% if l.dica %}
+                            <button type="button" class="log-dica-toggle" title="Ver explicacao didatica">💡</button>
+                        {% endif %}
+                    {% else %}
+                        {# ── Linha nao-estruturada ───────────────────── #}
+                        <code class="log-texto log-texto--raw">{{ l.texto }}</code>
+                        {% if l.dica %}
+                            <button type="button" class="log-dica-toggle" title="Ver explicacao didatica">💡</button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+
+                {% if l.dica %}
+                <div class="log-dica oculto">
+                    <div class="log-dica-titulo">{{ l.dica.titulo }}</div>
+                    <div class="log-dica-corpo">
+                        <p>{{ l.dica.explicacao }}</p>
+                        <p class="log-dica-acao"><strong>💬 O que fazer:</strong> {{ l.dica.acao }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <div class="log-acoes-rodape">
+            <button type="button" class="botao-secundario" id="btn-ir-fim" title="Rola o terminal de log ate a ultima linha (eventos mais recentes)">⬇️ Ir ao fim</button>
+            <button type="button" class="botao-secundario" id="btn-ir-topo" title="Rola o terminal de log de volta ao inicio">⬆️ Ir ao topo</button>
+        </div>
+
+    {% else %}
+        <p class="log-vazio">Nenhum conteudo encontrado neste log.</p>
+    {% endif %}
+
+    <p class="log-voltar">
+        <a class="acao-link" href="{{ voltar_url or url_for('scan.pagina_logs', secao='sistema') }}">↩️ Voltar</a>
+    </p>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+{# Script servido como estatico: a CSP da aplicacao e `script-src 'self'`, sem
+   'unsafe-inline'. Enquanto este bloco foi inline, o navegador o bloqueava e os
+   botoes de rolagem e o toggle das dicas nao funcionavam. Ver log-terminal.js. #}
+<script src="{{ url_for('static', filename='js/log-terminal.js') }}?v={{ asset_version('js/log-terminal.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,26 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Sobre{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>ℹ️ {{ dados.titulo }}</h2>
+    <p>{{ dados.descricao }}</p>
+    <p><a href="{{ dados.repositorio }}" target="_blank" rel="noopener noreferrer">🔗 Repositorio oficial</a></p>
+</section>
+
+<section class="panel">
+    <h3>👥 Equipe</h3>
+    <ul>
+        {% for integrante in dados.integrantes %}
+            <li>{{ integrante.nome }} - {{ integrante.rm }}</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endblock %}

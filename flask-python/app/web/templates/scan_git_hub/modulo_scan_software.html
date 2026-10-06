@@ -1,0 +1,37 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Scan Software{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>🔍 Scan de Software Instalado</h2>
+    <p>Lista programas instalados no Windows (via PowerShell).</p>
+</section>
+
+<section class="panel">
+    <form method="post" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label for="limite">Limite de exibicao</label>
+        <input id="limite" name="limite" type="number" value="50" min="10" max="200">
+        <button type="submit" title="Lista programas instalados no Windows via PowerShell, respeitando o limite de exibicao informado">Listar software</button>
+    </form>
+    <p class="texto-ajuda">Varredura completa de vulnerabilidades em software ainda em desenvolvimento.</p>
+</section>
+
+{% if programas %}
+<section class="panel">
+    <h3>Programas ({{ programas|length }})</h3>
+    <ul class="lista-programas">
+        {% for nome in programas %}
+            <li>{{ nome }}</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endif %}
+{% endblock %}

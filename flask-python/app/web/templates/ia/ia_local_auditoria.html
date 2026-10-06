@@ -1,0 +1,157 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Auditoria IA Local{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>📋 Auditoria {{ hardware|upper }} — {{ nome_log }}</h2>
+    <p>
+        <strong>📁 Projeto:</strong> {{ dados.projeto }}
+        |
+        <strong>🧮 Total no log:</strong> {{ total_falhas_geral }}
+    </p>
+    <div class="resumo-sev">
+        <span class="tag-sev critico">🛑 Critico: {{ resumo_severidade.critico }}</span>
+        <span class="tag-sev alto">🔴 Alto: {{ resumo_severidade.alto }}</span>
+        <span class="tag-sev medio">🟠 Medio: {{ resumo_severidade.medio }}</span>
+        <span class="tag-sev baixo">🟢 Baixo: {{ resumo_severidade.baixo }}</span>
+    </div>
+    <p><a class="acao-link" href="{{ url_for('ia_local.pagina_ia_local', hw=hardware) }}">↩️ Voltar ao painel IA</a></p>
+</section>
+
+<section class="panel">
+    <h3>🚨 Falhas encontradas</h3>
+
+    <form method="get" action="{{ url_for('ia_local.auditoria_relatorio', hw=hardware, nome_log=nome_log) }}" class="form-filtros-falhas">
+        <input type="hidden" name="por_pagina" value="{{ por_pagina }}">
+        <div class="filtro-campo">
+            <label for="severidade">🚦 Severidade</label>
+            <select id="severidade" name="severidade">
+                <option value="">Todas</option>
+                {% for opcao in severidades_disponiveis %}
+                    <option value="{{ opcao }}" {% if filtro_severidade == opcao %}selected{% endif %}>{{ opcao }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filtro-campo">
+            <label for="tipo">🏷️ Tipo</label>
+            <select id="tipo" name="tipo">
+                <option value="">Todos</option>
+                {% for opcao in tipos_disponiveis %}
+                    <option value="{{ opcao }}" {% if filtro_tipo == opcao %}selected{% endif %}>{{ opcao }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filtro-campo">
+            <label for="arquivo">📄 Arquivo</label>
+            <input id="arquivo" name="arquivo" type="text" value="{{ filtro_arquivo }}" placeholder="Ex.: app.py">
+        </div>
+
+        <div class="filtro-acoes">
+            <button type="submit" title="Aplica os filtros de severidade, tipo e arquivo">🎯 Filtrar falhas</button>
+            <a class="acao-link" href="{{ url_for('ia_local.auditoria_relatorio', hw=hardware, nome_log=nome_log, por_pagina=por_pagina) }}">♻️ Limpar filtros</a>
+        </div>
+    </form>
+
+    <form method="get" action="{{ url_for('ia_local.auditoria_relatorio', hw=hardware, nome_log=nome_log) }}" class="form-paginacao">
+        <input type="hidden" name="pagina" value="1">
+        <input type="hidden" name="severidade" value="{{ filtro_severidade }}">
+        <input type="hidden" name="tipo" value="{{ filtro_tipo }}">
+        <input type="hidden" name="arquivo" value="{{ filtro_arquivo }}">
+        <label for="por_pagina">📚 Itens por pagina (max 50):</label>
+        <select id="por_pagina" name="por_pagina" class="auto-submit">
+            {% for opcao in opcoes_por_pagina %}
+                <option value="{{ opcao }}" {% if por_pagina == opcao %}selected{% endif %}>{{ opcao }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <p class="texto-paginacao">
+        Exibindo <strong>{{ inicio_exibicao }}</strong> a <strong>{{ fim_exibicao }}</strong>
+        de <strong>{{ total_falhas }}</strong> falhas ({{ por_pagina }} por pagina)
+        {% if filtro_severidade or filtro_tipo or filtro_arquivo %}
+            | Base total do log: <strong>{{ total_falhas_geral }}</strong>
+        {% endif %}
+    </p>
+
+    {% if falhas_pagina %}
+        <div class="tabela-wrapper">
+            <table class="tabela-tatica">
+                <thead>
+                    <tr>
+                        <th>🆔 ID</th>
+                        <th>🚦 Severidade</th>
+                        <th>🏷️ Tipo</th>
+                        <th>📄 Arquivo</th>
+                        <th>📍 Linha</th>
+                        <th>📛 CVE/CWE</th>
+                        <th>🔎 Detalhe</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for falha in falhas_pagina %}
+                        <tr>
+                            <td data-label="ID">{{ falha.indice }}</td>
+                            <td data-label="Severidade">
+                                {% set sev = falha.severidade|string|upper %}
+                                {% if "CRIT" in sev or "CRÍT" in sev %}
+                                    <span class="tag-sev critico"><span class="icone-sev">🛑</span>{{ falha.severidade }}</span>
+                                {% elif "ALTO" in sev or "ALTA" in sev %}
+                                    <span class="tag-sev alto"><span class="icone-sev">🔴</span>{{ falha.severidade }}</span>
+                                {% elif "MED" in sev or "MÉD" in sev %}
+                                    <span class="tag-sev medio"><span class="icone-sev">🟠</span>{{ falha.severidade }}</span>
+                                {% else %}
+                                    <span class="tag-sev baixo"><span class="icone-sev">🟢</span>{{ falha.severidade }}</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Tipo">{{ falha.tipo }}</td>
+                            <td data-label="Arquivo">{{ falha.arquivo }}</td>
+                            <td data-label="Linha">{{ falha.linha }}</td>
+                            <td data-label="CVE / CWE" class="celula-links-ref">
+                                {% for item in falha.links_cve %}
+                                    <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.codigo }}</a>
+                                {% endfor %}
+                                {% for item in falha.links_cwe %}
+                                    <a href="{{ item.url_mitre }}" target="_blank" rel="noopener noreferrer">{{ item.codigo }}</a>
+                                {% endfor %}
+                                {% if not falha.links_cve and not falha.links_cwe %}
+                                    <span class="sem-ref">—</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Detalhe">
+                                <a class="acao-link" href="{{ url_for('ia_local.detalhe_falha_auditoria', hw=hardware, nome_log=nome_log, falha_id=falha.indice) }}">🔎 Ver</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if total_paginas > 1 %}
+        <nav class="paginacao" aria-label="Paginacao de falhas">
+            {% if pagina > 1 %}
+                <a class="acao-link" href="{{ url_for('ia_local.auditoria_relatorio', hw=hardware, nome_log=nome_log, pagina=1, por_pagina=por_pagina, severidade=filtro_severidade, tipo=filtro_tipo, arquivo=filtro_arquivo) }}">⏮️ Primeira</a>
+                <a class="acao-link" href="{{ url_for('ia_local.auditoria_relatorio', hw=hardware, nome_log=nome_log, pagina=pagina-1, por_pagina=por_pagina, severidade=filtro_severidade, tipo=filtro_tipo, arquivo=filtro_arquivo) }}">⬅️ Anterior</a>
+            {% endif %}
+
+            <span class="pagina-atual">📖 Pagina {{ pagina }} de {{ total_paginas }}</span>
+
+            {% if pagina < total_paginas %}
+                <a class="acao-link" href="{{ url_for('ia_local.auditoria_relatorio', hw=hardware, nome_log=nome_log, pagina=pagina+1, por_pagina=por_pagina, severidade=filtro_severidade, tipo=filtro_tipo, arquivo=filtro_arquivo) }}">Proxima ➡️</a>
+                <a class="acao-link" href="{{ url_for('ia_local.auditoria_relatorio', hw=hardware, nome_log=nome_log, pagina=total_paginas, por_pagina=por_pagina, severidade=filtro_severidade, tipo=filtro_tipo, arquivo=filtro_arquivo) }}">Ultima ⏭️</a>
+            {% endif %}
+        </nav>
+        {% endif %}
+    {% else %}
+        <p>Nenhuma falha encontrada com os filtros aplicados.</p>
+    {% endif %}
+</section>
+{% endblock %}

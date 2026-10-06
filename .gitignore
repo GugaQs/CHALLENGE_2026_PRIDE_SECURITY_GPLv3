@@ -1,0 +1,261 @@
+# =========================================================
+# Python
+# =========================================================
+__pycache__/
+*.py[codz]
+*$py.class
+*.pyd
+*.pyo
+*.py,cover
+
+# C extensions
+*.so
+
+# =========================================================
+# Build / packaging
+# =========================================================
+.Python
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+*.egg
+.installed.cfg
+MANIFEST
+pip-wheel-metadata/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# =========================================================
+# Virtual environments
+# =========================================================
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.python-version
+
+# =========================================================
+# Environment variables / secrets
+# =========================================================
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+.envrc
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+secrets.*
+credentials.*
+
+# =========================================================
+# Logs / runtime / temp
+# =========================================================
+*.log
+logs/
+*.pid
+*.seed
+*.pid.lock
+*.out
+*.err
+tmp/
+temp/
+.cache/
+
+# =========================================================
+# Test / coverage / quality tools
+# =========================================================
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+nosetests.xml
+*.cover
+*.py.cover
+.pytest_cache/
+.hypothesis/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+.cover/
+cover/
+
+# =========================================================
+# Jupyter / IPython
+# =========================================================
+.ipynb_checkpoints/
+profile_default/
+ipython_config.py
+
+# =========================================================
+# Frameworks / local databases
+# =========================================================
+# Django
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# Flask
+instance/
+.webassets-cache
+
+# FastAPI / general local app state
+*.sqlite3
+*.db
+
+# Scrapy
+.scrapy/
+
+# =========================================================
+# Documentation
+# =========================================================
+docs/_build/
+site/
+
+# =========================================================
+# Type / build helpers
+# =========================================================
+.pybuilder/
+target/
+cython_debug/
+__pypackages__/
+
+# =========================================================
+# Package managers
+# =========================================================
+# Pipenv
+# Pipfile.lock
+
+# Poetry
+# poetry.lock
+# poetry.toml
+
+# PDM
+.pdm-python
+.pdm-build/
+# pdm.lock
+# pdm.toml
+
+# UV
+# uv.lock
+
+# Pixi
+.pixi/
+# pixi.lock
+
+# =========================================================
+# IDEs and editors
+# =========================================================
+# VS Code
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/*.code-snippets
+.history/
+
+# IntelliJ / PyCharm / JetBrains
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+cmake-build-*/
+
+# Eclipse
+.project
+.pydevproject
+.settings/
+
+# Spyder
+.spyderproject
+.spyproject
+
+# Rope
+.ropeproject
+
+# Cursor
+.cursorignore
+.cursorindexingignore
+
+# =========================================================
+# OS files
+# =========================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================================================
+# Misc tools
+# =========================================================
+.abstra/
+marimo/_static/
+marimo/_lsp/
+__marimo__/
+
+# =========================================================
+# Optional generated data
+# =========================================================
+*.bak
+*.tmp
+*.swp
+*.swo
+
+# =========================================================
+# ASPM PRIDE Security - Excecoes de Logs
+# =========================================================
+!api_python/logs/
+api_python/logs/*
+!api_python/logs/amd/
+!api_python/logs/nvidia/
+!api_python/logs/generic/
+!api_python/logs/amd/reports/
+!api_python/logs/nvidia/reports/
+!api_python/logs/generic/reports/
+!api_python/logs/amd/system/
+!api_python/logs/nvidia/system/
+!api_python/logs/amd/reports/*.json
+!api_python/logs/amd/reports/*.md
+!api_python/logs/amd/reports/*.txt
+!api_python/logs/nvidia/reports/*.json
+!api_python/logs/nvidia/reports/*.md
+!api_python/logs/nvidia/reports/*.txt
+!api_python/logs/generic/reports/*.json
+!api_python/logs/amd/system/*.log
+!api_python/logs/nvidia/system/*.log
+ 
+# Relatorios gerados localmente 
+api_python/logs/*/reports/ 
+api_python/logs/*/reports/
+api_python/logs/*/reports/
+api_python/logs/*/reports/

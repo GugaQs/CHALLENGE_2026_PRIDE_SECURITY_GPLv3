@@ -1,0 +1,81 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Filtros Avancados{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>Filtros avancados — {{ nome_log }}</h2>
+    <p>Projeto: <strong>{{ dados.projeto }}</strong> | Falhas no relatorio: {{ dados.vulnerabilidades|length }}</p>
+    <p>
+        <a href="{{ url_for('scan.detalhe_log', nome_log=nome_log) }}">Voltar ao detalhe</a>
+    </p>
+</section>
+
+<section class="panel">
+    <h3>Aplicar filtro e exportar JSON</h3>
+    <form method="post" action="{{ url_for('scan.filtros_avancados', nome_log=nome_log) }}" class="form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label for="tipo">Tipo</label>
+        <select id="tipo" name="tipo">
+            <option value="">Todos</option>
+            {% for t in opcoes.tipos %}
+                <option value="{{ t }}">{{ t }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="severidade">Severidade</label>
+        <select id="severidade" name="severidade">
+            <option value="">Todas</option>
+            {% for s in opcoes.severidades %}
+                <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="confianca">Confianca</label>
+        <select id="confianca" name="confianca">
+            <option value="">Todas</option>
+            {% for c in opcoes.confiancas %}
+                <option value="{{ c }}">{{ c }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="arquivo_contem">Arquivo contem</label>
+        <input id="arquivo_contem" name="arquivo_contem" type="text" placeholder="Ex.: views.py">
+
+        <label for="codigo_contem">Codigo contem</label>
+        <input id="codigo_contem" name="codigo_contem" type="text" placeholder="Ex.: password">
+
+        <label for="linha_min">Linha min</label>
+        <input id="linha_min" name="linha_min" type="number" min="0">
+
+        <label for="linha_max">Linha max</label>
+        <input id="linha_max" name="linha_max" type="number" min="0">
+
+        <button type="submit" title="Gera um novo arquivo report_filtrado_*.json apenas com falhas que correspondem aos criterios selecionados">Gerar report_filtrado_*.json</button>
+    </form>
+</section>
+
+<section class="panel">
+    <h3>Agrupamento por tipo</h3>
+    <ul>
+        {% for tipo, lista in agrupamento_tipo.items() %}
+            <li>{{ tipo }}: {{ lista|length }} falha(s)</li>
+        {% endfor %}
+    </ul>
+</section>
+
+<section class="panel">
+    <h3>Agrupamento por severidade</h3>
+    <ul>
+        {% for sev, lista in agrupamento_severidade.items() %}
+            <li>{{ sev }}: {{ lista|length }} falha(s)</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endblock %}

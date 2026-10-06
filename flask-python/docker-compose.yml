@@ -1,0 +1,22 @@
+# Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+# Licensed under the GNU General Public License v3.0.
+# See LICENSE.md for the full license text.
+
+services:
+  app:
+    build: .
+    image: pride-security-flask:latest
+    container_name: pride-security-flask
+    ports:
+      - "5000:5000"
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FLASK_ENV=development
+
+networks:
+  default:
+    name: pride-security-network

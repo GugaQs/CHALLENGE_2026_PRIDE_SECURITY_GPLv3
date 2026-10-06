@@ -1,0 +1,59 @@
+<!--
+  Copyright (C) 2026 Equipe ASPM IA FIAP - Challenge 2026
+  Licensed under the GNU General Public License v3.0.
+  See LICENSE.md for the full license text.
+-->
+
+{% extends "base.html" %}
+
+{% block title %}Início — ASPM Pride Security{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>🧭 Cyber Defense Overview</h2>
+    <p>Dashboard web do ASPM PRIDE Security — varredura de vulnerabilidades, IA local e auditoria de containers.</p>
+</section>
+
+<section class="dashboard-grid">
+    <a class="card painel-neon" href="{{ url_for('scan.pagina_scan') }}">
+        <h3>📂 Scan de Projeto</h3>
+        <p>Varredura por assinaturas de vulnerabilidade com relatório JSON e filtros avançados.</p>
+    </a>
+    <a class="card painel-neon" href="{{ url_for('ia_local.pagina_ia_local') }}">
+        <h3>🧠 IA Local (AMD / NVIDIA)</h3>
+        <p>Scan com GPU local + parecer cognitivo via LM Studio. Separação de logs por fabricante.</p>
+    </a>
+    <a class="card painel-neon" href="{{ url_for('modulos.scan_containers') }}">
+        <h3>🐳 Scan Containers</h3>
+        <p>Análise de Dockerfiles e docker-compose em busca de configurações inseguras.</p>
+    </a>
+    <a class="card painel-neon" href="{{ url_for('modulos.scan_ia_api') }}">
+        <h3>☁️ IA via API</h3>
+        <p>Varredura com modelo remoto (GPT, Claude, Gemini). Configure o provedor e a chave API.</p>
+    </a>
+    <a class="card painel-neon" href="{{ url_for('modulos.scan_software') }}">
+        <h3>🔍 Scan Software</h3>
+        <p>Lista programas instalados no sistema operacional com limite configurável.</p>
+    </a>
+    <a class="card painel-neon" href="{{ url_for('scan.pagina_logs', secao='scan') }}">
+        <h3>📄 Relatórios</h3>
+        <p>Histórico de relatórios JSON com filtros por severidade, tipo e arquivo.</p>
+    </a>
+    <a class="card painel-neon" href="{{ url_for('logs.pagina_logs_sistema') }}">
+        <h3>📜 Logs do Sistema</h3>
+        <p>Trilha técnica colorida com níveis INFO / WARNING / ERROR / DEBUG por módulo.</p>
+    </a>
+    <a class="card painel-neon" href="{{ url_for('modulos.scan_github_problema') }}">
+        <h3>🐙 GitHub e Scans Automáticos</h3>
+        <p>Entenda limites de custo, privacidade e falsos positivos em esteiras de CI/CD.</p>
+    </a>
+    <a class="card painel-neon" href="{{ url_for('documentacao.pagina_documentacao') }}">
+        <h3>📚 Documentação</h3>
+        <p>README, arquitetura, diagramas Mermaid e guias técnicos navegáveis na web.</p>
+    </a>
+    <a class="card painel-neon" href="{{ url_for('sobre.pagina_sobre') }}">
+        <h3>ℹ️ Sobre</h3>
+        <p>Equipe FIAP 1TDCPV e contexto institucional do Challenge 2026.</p>
+    </a>
+</section>
+{% endblock %}

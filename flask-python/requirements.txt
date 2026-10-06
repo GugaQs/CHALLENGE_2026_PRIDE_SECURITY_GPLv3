@@ -1,0 +1,6 @@
+colorama
+flask
+flask-wtf
+requests
+pytest>=8.0
+markdown

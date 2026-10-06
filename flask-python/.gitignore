@@ -1,0 +1,46 @@
+# Contexto da IA (Backup Local)
+janela_contexto_gemini/
+PROJETO_MEMORIA_CONTEXTO.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# Logs do Scanner (Permitindo commit como diferencial)
+app/ui/scan_projeto/logs/*.json
+# app/ui/scan_ia_local/logs/*.json -> Path depreciado
+!logs/amd/
+!logs/nvidia/
+!logs/generic/
+!logs/amd/reports/
+!logs/amd/system/
+!logs/nvidia/reports/
+!logs/nvidia/system/
+!logs/generic/reports/
+!logs/amd/system/*.log
+!logs/nvidia/system/*.log
+!logs/amd/reports/*.json
+!logs/nvidia/reports/*.json
+!logs/amd/reports/*.md
+!logs/amd/reports/*.txt
+!logs/nvidia/reports/*.json
+!logs/nvidia/reports/*.md
+!logs/nvidia/reports/*.txt
+!logs/generic/reports/*.json
+logs/erro_sistema.log
+logs/config/*.json
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker
+.dockerignore
